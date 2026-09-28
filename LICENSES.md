@@ -8,8 +8,8 @@ Packages: 23. Flagged: 2 (see the OSI status column and the notes below).
 
 Every flagged package's OWN top-level licence (the parent package identifier itself) is OSI-approved; the
 flags below are on individual BUNDLED components inside the installed wheel (a data file, a font, a compiled
-third-party library), not on numpy or matplotlib as distributed. Bundled non-OSI components pending CEO
-exception: see "Notes on flags" and the matplotlib bundled-component table below for the exact inventory.
+third-party library), not on numpy or matplotlib as distributed. Bundled non-OSI components covered by the company licence exception (below);
+see "Notes on flags" and the matplotlib bundled-component table below for the exact inventory.
 
 | package | version | role | License-Expression | License field | licence classifiers | License-File entries | OSI status |
 |---|---|---|---|---|---|---|---|
@@ -81,3 +81,28 @@ Bundled third-party components listed in matplotlib's own `License` metadata fie
 
 Every CSV this repo writes goes through `src/tabular_demand_forecast/csv_safety.py`: string cells starting with
 `=`, `+`, `-`, `@`, TAB or CR get a leading apostrophe. CSV is not universally formula-safe; see that module's docstring.
+
+## Licence exception (company decision `20-decisions/2026-09-28-licence-exception-wheel-bundled-components.md`)
+
+Accepted 2026-09-28, CEO by delegation, with Astra concurring (vault 9fd116d §2); the CEO may still veto. This is a
+standing, **enumerated** exception to the company's OSI-only rule, and it covers only the components listed below, in
+the pinned wheels named. It does not declare these licences OSI-approved.
+
+This repository does **not** vendor or redistribute any of these wheels: users install them from PyPI via
+`requirements*.txt`. Bundled notices stay exactly as shipped inside each wheel, unmodified. Where screenshots or
+charts render a bundled font, the font licence permits using it to produce documents and images.
+
+| Component | Package / version | File(s) in the wheel | Licence | Licence text / source | Option chosen | Obligations |
+|---|---|---|---|---|---|---|
+| Highway random-inl.h | numpy 2.5.3 | `hwy/contrib/random/random-inl.h` (compiled into numpy) | CC0-1.0 | `numpy-2.5.3.dist-info/licenses/numpy/_core/src/highway/LICENSE` | n/a | none (public-domain dedication); notice kept |
+| Reference LAPACK (via OpenBLAS) | numpy 2.5.3, scipy 1.18.1 | compiled into the bundled OpenBLAS | BSD-3-Clause-Open-MPI | `numpy-2.5.3.dist-info/licenses/LICENSE.txt`, `scipy-1.18.1.dist-info/LICENSE.txt` | n/a | keep copyright and licence notice (as shipped) |
+| Qhull | scipy 1.18.1 | `scipy/spatial/qhull_src/COPYING_QHULL.txt` (compiled `_qhull`) | Qhull licence | that file | n/a | keep notice; modified versions must be marked (we modify nothing) |
+| DOP853 | scipy 1.18.1 | `scipy/integrate/LICENSE_DOP` | BSD-style (Hairer) | that file | n/a | keep notice |
+| BaKoMa fonts | matplotlib 3.11.2 | `matplotlib/mpl-data/fonts/ttf/cm*.ttf`, `matplotlib/mpl-data/fonts/afm/cm*.afm` | BaKoMa Fonts Licence | matplotlib `License` metadata field (installed `matplotlib-3.11.2.dist-info`) | n/a | redistribute only unmodified with the notice (we do not redistribute) |
+| Courier 10 Pitch | matplotlib 3.11.2 | `matplotlib/tests/Courier10PitchBT-Bold.pfb` | Bitstream-Charter | matplotlib `License` metadata field | n/a | keep notice; unused at runtime |
+| FreeType | matplotlib 3.11.2 | `matplotlib/ft2font.*.so` | FTL OR GPL-2.0-or-later | matplotlib `License` metadata field | **FTL** | FTL credit clause: acknowledge FreeType in documentation of distributed products (we distribute none; acknowledged here) |
+| JSXTools resize observer | matplotlib 3.11.2 | `matplotlib/backends/web_backend/js/mpl.js` | CC0-1.0 | matplotlib `License` metadata field | n/a | none; unused (no web backend) |
+| QHull (matplotlib) | matplotlib 3.11.2 | `matplotlib/_qhull.*.so` | Qhull licence | matplotlib `License` metadata field | n/a | keep notice |
+| Yorick colormaps | matplotlib 3.11.2 | `lib/matplotlib/_cm.py` (gist/yorick maps) | BSD-style | matplotlib `License` metadata field | n/a | keep notice |
+
+This project uses FreeType (via matplotlib) under the FreeType License (FTL), © The FreeType Project (www.freetype.org).
