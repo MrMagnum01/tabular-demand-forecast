@@ -1,7 +1,7 @@
 [project]
 name = "tabular-demand-forecast"
 version = "0.1.0"
-description = "Synthetic weekly demand forecasting demo. Step 1: frozen protocol, deterministic generator, leakage-guard tests. No estimator code."
+description = "Synthetic weekly demand forecasting demo: frozen protocol, deterministic generator, leakage-guard tests, baselines, gradient-boosting selection, locked-test evaluation, report and CLI."
 requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
