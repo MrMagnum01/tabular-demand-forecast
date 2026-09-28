@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from tabular_demand_forecast.calendar_utils import week_of_year
+from tabular_demand_forecast.calendar_utils import week_of_year, week_start_date
 from tabular_demand_forecast.features import (
     ObservationLookup,
     _roll_mean,
@@ -18,7 +18,14 @@ def _fixture_data(observed_rows, n_weeks=110, stores=("A",), skus=("SKU001",)):
     observed = pd.DataFrame(observed_rows, columns=["store", "sku", "week_index", "y_obs"])
     plans = pd.DataFrame(
         [
-            {"store": r["store"], "sku": r["sku"], "week_index": r["week_index"], "price": 10.0, "promo_flag": 0}
+            {
+                "store": r["store"],
+                "sku": r["sku"],
+                "week_index": r["week_index"],
+                "price": 10.0,
+                "promo_flag": 0.0,
+                "available_at": pd.Timestamp(week_start_date(r["week_index"])),
+            }
             for r in observed_rows
         ]
     )

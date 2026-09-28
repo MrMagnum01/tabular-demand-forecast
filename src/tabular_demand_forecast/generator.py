@@ -89,21 +89,35 @@ def generate(seeds: GeneratorSeeds) -> GeneratedData:
     seasonal_multiplier_w = 1.0 + amplitude * np.sin(2.0 * np.pi * (woy - 1.0) / 52.0)
 
     # --- per-SKU draws ---
+    sku_base_params = planted["non_negative_integer_construction"][
+        "sku_base_level_distribution_params"
+    ]
     rng_sku_base = np.random.default_rng(seeds.sku_base_level_seed)
-    sku_base_level = rng_sku_base.lognormal(mean=np.log(20.0), sigma=0.4, size=n_skus)
+    sku_base_level = rng_sku_base.lognormal(
+        mean=np.log(sku_base_params["mean_base"]),
+        sigma=sku_base_params["sigma"],
+        size=n_skus,
+    )
 
+    ref_price_params = planted["price_elasticity"]["reference_price_distribution_params"]
     rng_price_ref = np.random.default_rng(seeds.price_reference_seed)
-    reference_price = rng_price_ref.uniform(5.0, 50.0, size=n_skus)
+    reference_price = rng_price_ref.uniform(
+        ref_price_params["low"], ref_price_params["high"], size=n_skus
+    )
 
     # --- per-(store,sku,week) draws, vectorised in fixed row-major order ---
     promo_probability = planted["promo_uplift"]["promo_probability"]
     rng_promo = np.random.default_rng(seeds.promo_schedule_seed)
     promo_flag = (rng_promo.random(size=shape) < promo_probability).astype(int)
 
+    price_noise_params = planted["price_elasticity"]["price_noise_distribution_params"]
     rng_price_noise = np.random.default_rng(seeds.price_noise_seed)
-    price_noise = rng_price_noise.uniform(0.98, 1.02, size=shape)
+    price_noise = rng_price_noise.uniform(
+        price_noise_params["low"], price_noise_params["high"], size=shape
+    )
 
-    price = reference_price[None, :, None] * (1.0 - 0.1 * promo_flag) * price_noise
+    promo_discount_factor = planted["price_elasticity"]["promo_price_discount_factor"]
+    price = reference_price[None, :, None] * (1.0 - promo_discount_factor * promo_flag) * price_noise
 
     elasticity = planted["price_elasticity"]["elasticity"]
     price_multiplier = (price / reference_price[None, :, None]) ** elasticity

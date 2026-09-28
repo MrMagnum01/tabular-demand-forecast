@@ -1,7 +1,7 @@
 """Synthetic tabular demand-forecast demo package.
 
 Step 1 scope only: deterministic data generation and leakage-safe feature
-construction, driven entirely by eval/protocol.json. No estimator or
+construction, driven entirely by eval/protocol.v2.json. No estimator or
 model-fitting code lives in this package yet.
 """
 

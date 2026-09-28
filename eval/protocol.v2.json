@@ -1,0 +1,422 @@
+{
+  "protocol_version": "2.0.0",
+  "status": "FROZEN_PENDING_ASTRA_REVIEW",
+  "created": "2026-09-28",
+  "predecessor_version": "1.0.0",
+  "predecessor_path": "eval/protocol.v1.json",
+  "predecessor_sha256": "142c037dcc6cf4a05286f9035373f0d91ffdafc6f48af997c07a83321d1c94b1",
+  "authors": "demo-bot (Claude Sonnet 5), per brief batch1-tabular-ml.md, Astra amendments 2026-09-28, and Astra's step-1 HOLD review 2026-09-28 (vault: 40-sessions/2026-09-28-astra-tabular-protocol-review.md)",
+  "scope_note": "This file is the single frozen source of truth for calendar, entities, partitions, features, planted effects, seeds, missingness, model/metric specification and required leakage tests. It is committed BEFORE any estimator is fit or any test-period number is inspected. Step 1 deliverable is this file plus the data generator and feature-construction code only; no baseline predictions, no metrics computation, no GBM code exist yet.",
+  "changelog": {
+    "v2.0.0_vs_v1.0.0": [
+      "HIGH: features.price_and_promo availability is now enforced per plan row against available_at <= origin(t), not merely asserted; a plan keyed to target week t whose available_at exceeds origin(t) (a delayed/late plan for that SAME target) now yields NaN price/promo_flag, closing the leak Astra's probe (tests/test_leakage.py::test_late_plan_for_same_target_is_not_available) demonstrated against v1's features.py:59-80/126.",
+      "MEDIUM: features.price_and_promo.plan_missing_policy no longer carries an optional/'if ever enabled' fallback branch; missing or late plans make plan-requiring models unavailable, full stop, in this protocol.",
+      "MEDIUM: model_selection.eligible_key_set is rewritten as one configuration-independent common mask (observed target + available lag1/lag52/roll_mean_4/price/promo_flag), fixed before fitting and identical across all 36 grid configurations and baselines; lag2/lag4/roll_mean_13 are deliberately excluded from the mask since HGB's native missing-value routing may see them as NaN.",
+      "MEDIUM: metrics.zero_or_empty_denominator now invalidates WAPE only when N>0 and sum(abs(actual))==0; MAE and signed_bias remain defined in that case. N==0 still invalidates all three.",
+      "MEDIUM: pre_fit_freeze (new block under freeze_and_provenance) records numeric feature dtypes, pins scikit-learn and records exact numerical dependency versions, and lists source hashes for protocol.py, calendar_utils.py, features.py alongside generator.py, before any fit/selection code is written.",
+      "MEDIUM: generator.py and features.py no longer hardcode distribution parameters or feature/window literals that protocol.json already documents in prose; planted_effects now carries machine-readable *_distribution_params fields the generator reads directly, and features.py derives FEATURE_COLUMNS/lag K-values/rolling-window specs from features.fixed_list/lags.K_values/rolling_means.*, validating the derived list equals features.fixed_list. protocol.py's single-source-of-truth docstring claim is narrowed to numeric parameters (functional forms, e.g. the seasonal sine formula or the negative-binomial construction, remain code, bound by source_hashes, not parsed from JSON).",
+      "No change to calendar, entities, partitions, planted-effect numeric values, generator seeds, or the generated dataset's values: generator_version bumps to 2.0.0 and generator_hash is recomputed because the source text moved literals into config, but every literal value is unchanged, so frozen-seed output is byte-identical to v1's generator 1.0.0 (see tests/test_generator.py::test_frozen_seeds_are_deterministic and the new cross-version determinism check)."
+    ]
+  },
+
+  "calendar": {
+    "timezone": "UTC",
+    "week_convention": "week_index is 1-based; week_index w spans [start_date + 7*(w-1) days, +6 days], a Monday-start ISO week.",
+    "start_date": "2022-01-03",
+    "n_weeks": 104,
+    "week_index_range": [1, 104],
+    "date_formula": "week_start_date(w) = start_date + timedelta(days = 7 * (w - 1))",
+    "worked_examples": {
+      "week_1": "2022-01-03 (ISO 2022-W01)",
+      "week_52": "2022-12-26 (ISO 2022-W52)",
+      "week_53": "2023-01-02 (ISO 2023-W01)",
+      "week_78": "2023-06-26 (ISO 2023-W26)",
+      "week_79": "2023-07-03 (ISO 2023-W27)",
+      "week_91": "2023-09-25 (ISO 2023-W39)",
+      "week_92": "2023-10-02 (ISO 2023-W40)",
+      "week_104": "2023-12-25 (ISO 2023-W52)"
+    },
+    "forecast_semantics": "Forecast for target week t is issued at origin(t) = week_start_date(t), i.e. the instant week t begins, using only data with availability timestamp <= origin(t). Equivalently: after week t-1's observation has closed and become available. Lag k for target t means the calendar value y[t-k] on the full reindexed weekly grid (never the kth previous non-missing row).",
+    "rolling_window_definition": "Rolling 4- and 13-week means for target t are computed over the calendar weeks {t-1, ..., t-4} and {t-1, ..., t-13} respectively, i.e. they end at t-1 and never include week t.",
+    "evaluation_mode": "Rolling one-week-ahead. Once week t closes, its observed target may supply lags/rolling inputs for predicting t+1. Models are fit/selected once (per model_selection below) and are NOT refit during the test walk; each test-period prediction uses only lags/rolling features/plans available strictly at its own origin, computed from the fixed weekly grid (never a 13-week-ahead forecast made once at week 91)."
+  },
+
+  "entities": {
+    "stores": ["A", "B", "C"],
+    "store_effect_note": "Store multipliers are fixed declared constants (not sampled) applied to the SKU base level.",
+    "store_multiplier": { "A": 1.0, "B": 0.85, "C": 1.15 },
+    "n_skus": 30,
+    "sku_id_format": "SKU{idx:03d} for idx in 1..30 (SKU001 .. SKU030)",
+    "n_series": 90,
+    "store_unseen_during_fitting": "C",
+    "store_c_label": "store unseen during fitting, with observed history (NOT a zero-history cold start; its own past weekly observations are available to supply causal lags at test time)",
+    "full_grid_rows": 9360,
+    "full_grid_shape_note": "3 stores x 30 skus x 104 weeks, row-major iteration order (store outer: A,B,C; sku middle: SKU001..SKU030; week inner: 1..104). This exact order is used for every vectorised random draw below and is required for seed reproducibility."
+  },
+
+  "partitions": {
+    "definition_by_store_group": {
+      "stores_A_B": {
+        "history_only_target_weeks": [1, 52],
+        "train_target_weeks": [53, 78],
+        "validation_target_weeks": [79, 91],
+        "final_refit_target_weeks": [53, 91],
+        "test_target_weeks": [92, 104],
+        "note": "Weeks 1-52 are never a forecast target for A/B; they exist solely as history so lag52 is defined starting at target week 53 (lag52 of week 53 = week 1)."
+      },
+      "store_C": {
+        "excluded_from_fitting_target_weeks": [1, 91],
+        "test_target_weeks": [92, 104],
+        "note": "C contributes zero rows to training, preprocessing, feature selection or validation at any target week. Its weeks 1-91 observations exist in the data (for computing its own test-period lags) but are never materialised as dataset rows outside the test partition."
+      }
+    },
+    "effective_row_counts": {
+      "train_AB": { "target_weeks": 26, "stores": 2, "skus": 30, "rows": 1560, "note": "26 training target weeks (53-78), not 78." },
+      "validation_AB": { "target_weeks": 13, "stores": 2, "skus": 30, "rows": 780 },
+      "final_refit_AB": { "target_weeks": 39, "stores": 2, "skus": 30, "rows": 2340, "note": "Superset of train_AB + validation_AB rows; used only for the one prescribed post-selection refit, never as an additional independent split." },
+      "test_AB": { "target_weeks": 13, "stores": 2, "skus": 30, "rows": 780 },
+      "test_C": { "target_weeks": 13, "stores": 1, "skus": 30, "rows": 390 },
+      "test_overall": { "rows": 1170, "note": "test_AB + test_C, reported as a secondary summary; primary test reporting is A/B and C separately." },
+      "feature_dataset_total_rows": 3510,
+      "feature_dataset_total_note": "train_AB (1560) + validation_AB (780) + test_AB (780) + test_C (390) = 3510 distinct rows before missing-value exclusion; final_refit_AB rows are a subset of train_AB+validation_AB, not additional."
+    },
+    "key_disjointness": "train, validation and test are disjoint by (store, sku, target_week) key by construction (non-overlapping target-week ranges). No key appears in more than one of {train, validation, test}.",
+    "refit_policy": "Exactly one prescribed refit is permitted after model selection: refit the selected configuration on final_refit_AB (A/B target weeks 53-91) before scoring test. No alternative refits are permitted after test-period numbers have been inspected. This is fixed now, before any fitting has occurred."
+  },
+
+  "features": {
+    "fixed_list": ["lag1", "lag2", "lag4", "lag52", "roll_mean_4", "roll_mean_13", "price", "promo_flag", "week_of_year"],
+    "excluded": "store_id and sku_id are excluded from the feature vector (not in fixed_list above); no unseen-category policy is required because no categorical entity ID is ever a model input.",
+    "availability_rule": "A data point with availability timestamp D is usable as a feature for target week t iff D <= origin(t) = week_start_date(t). This is enforced PER ROW by comparing that row's own available_at field to origin(t) -- never inferred from week_index equality alone. In particular, a plan record keyed to week_index = t whose available_at exceeds origin(t) (a delayed/late plan for that SAME target week) is NOT usable for target t and yields NaN price/promo_flag, even though its week_index matches t. Enforced programmatically in features.PlanLookup.get and covered by tests/test_leakage.py::test_late_plan_for_same_target_is_not_available (the same-target late-plan probe from Astra's 2026-09-28 review) in addition to the original future_plan_availability_cutoff test (which covers a different week_index being joined into the wrong target).",
+    "lags": {
+      "definition": "lagK(t) = y_obs(target_week = t - K) for the same (store, sku), read off the full reindexed weekly grid. If week (t-K) was masked missing, lagK(t) = NaN (a missing feature value, not zero-filled, not interpolated).",
+      "K_values": [1, 2, 4, 52],
+      "availability": "y_obs(t-K) closes at end of week (t-K), available_at = week_start_date(t-K+1) <= week_start_date(t) = origin(t) for all K >= 1. Always satisfied."
+    },
+    "rolling_means": {
+      "roll_mean_4": {
+        "window_target_weeks": "t-1 .. t-4",
+        "aggregation": "mean of observed (non-missing) values in the window",
+        "min_observed_required": 3,
+        "window_size": 4,
+        "else": "NaN (missing feature) if fewer than 3 of the 4 weeks are observed"
+      },
+      "roll_mean_13": {
+        "window_target_weeks": "t-1 .. t-13",
+        "aggregation": "mean of observed (non-missing) values in the window",
+        "min_observed_required": 10,
+        "window_size": 13,
+        "else": "NaN (missing feature) if fewer than 10 of the 13 weeks are observed"
+      },
+      "boundary_note": "Both windows end at t-1 and never include week t or any future week. Per-entity: a rolling window for (store, sku) never reads values from a different store or sku (no cross-entity aggregation)."
+    },
+    "price_and_promo": {
+      "semantics": "price(t) and promo_flag(t) are next-week PLANS for target week t, known at origin(t) exactly (available_at = origin(t) = week_start_date(t) at generation time). They are generated independently of the future demand noise draw for week t (the plan is drawn first; demand is then simulated conditional on the plan), so there is no future-value lookup.",
+      "availability_enforcement": "A plan row's own available_at timestamp is compared against origin(t) for the target week t it is being looked up for. available_at <= origin(t) => usable; available_at > origin(t), available_at missing/null, or no plan row at all => UNAVAILABLE for that (store, sku, t): price and promo_flag are both NaN. This holds even when the plan row's week_index equals t (a same-target delayed plan), which is the case Astra's review found unenforced in v1.",
+      "plan_missing_policy": "A missing, null, or late (available_at > origin(t)) plan makes price/promo_flag UNAVAILABLE (NaN) for that feature row -- models requiring price or promo_flag are unavailable for that row and it is excluded from those models' scored set, counted as unavailable (see metrics.coverage_reporting). No fallback of any kind -- ex-ante, ex-post, or otherwise -- is enabled or specified anywhere in this protocol; there is no optional/'if ever enabled' fallback branch. Enabling a fallback in the future requires a new protocol successor and a fresh Astra review; it may never be introduced ad hoc under this freeze.",
+      "plan_missing_probability": 0.0,
+      "no_future_lookup": "The join key for a plan is the target week t itself; there is no code path that can substitute a later week's plan (available_at > origin(t)) for an earlier target -- and, per availability_enforcement above, even a plan sharing t's own week_index is rejected once its available_at exceeds origin(t)."
+    },
+    "week_of_year": {
+      "definition": "ISO calendar week-of-year (1-53) of week_start_date(t)",
+      "availability": "Calendar information, known unconditionally at any origin."
+    },
+    "no_target_derived_aggregates": "No feature is computed by aggregating targets across entities (no cross-SKU or cross-store pooling) or across future times relative to origin(t)."
+  },
+
+  "planted_effects": {
+    "seasonality": {
+      "form": "seasonal_multiplier(t) = 1 + amplitude * sin(2*pi*(week_of_year(t) - 1) / 52)",
+      "amplitude": 0.25,
+      "phase_weeks": 0,
+      "peak_week_of_year": 14,
+      "applies_to": "all stores and skus, multiplicatively on the latent mean"
+    },
+    "promo_uplift": {
+      "form": "promo_multiplier(s,k,t) = 1 + promo_uplift_factor * promo_flag(s,k,t)",
+      "promo_uplift_factor": 0.4,
+      "promo_probability": 0.12,
+      "note": "promo_flag is the planted planning variable; promo_uplift_factor is the true multiplicative effect used to generate demand."
+    },
+    "price_elasticity": {
+      "form": "price_multiplier(s,k,t) = (price(s,k,t) / reference_price(k)) ** elasticity",
+      "elasticity": -1.2,
+      "reference_price_distribution": "Uniform(5, 50) per SKU, drawn once",
+      "reference_price_distribution_params": { "low": 5.0, "high": 50.0, "note": "Machine-readable; generator.py reads low/high from here (rng.uniform(low, high, size=n_skus)) instead of hardcoding 5.0/50.0. reference_price_distribution above is the human-readable restatement of the same values." },
+      "price_noise_distribution_params": { "low": 0.98, "high": 1.02, "note": "Machine-readable; generator.py reads low/high from here instead of hardcoding 0.98/1.02. Matches price_construction's 'price_noise ~ Uniform(0.98, 1.02)' below." },
+      "promo_price_discount_factor": 0.1,
+      "price_construction": "price(s,k,t) = reference_price(k) * (1 - promo_price_discount_factor * promo_flag(s,k,t)) * price_noise(s,k,t); price_noise ~ Uniform(price_noise_distribution_params.low, price_noise_distribution_params.high) iid"
+    },
+    "demand_shift": {
+      "n_skus": 2,
+      "selection": "2 SKU indices (0-based into the 30-SKU array) drawn without replacement via shift_selection_seed; selection is NOT tuned for a desired model result.",
+      "onset_target_week": 92,
+      "onset_note": "Onset is the first week of the TEST partition; the shift never affects train/validation data.",
+      "magnitudes": [1.6, 0.6],
+      "magnitude_assignment": "The first SKU index drawn from shift_selection_seed gets magnitude[0] (a +60% step level increase), the second gets magnitude[1] (a -40% step level decrease).",
+      "form": "shift_multiplier(k, t) = magnitude_for(k) if (k is a shift SKU and t >= 92) else 1.0",
+      "sku_ids_and_exact_magnitudes": "Materialised at generation time from shift_selection_seed and recorded in the generator's truth_meta output (not hand-picked); see generator.SHIFT_MAGNITUDES and the generated truth_meta['shift'] dict for the realised SKU IDs."
+    },
+    "missingness": {
+      "mechanism": "Bernoulli, NOT an exact quota",
+      "probability": 0.03,
+      "applies_to": "every (store, sku, week) cell on the full 9360-row grid, independently, regardless of partition",
+      "seed": "missingness_seed (see generator_seeds)",
+      "realized_fraction_reporting": "The actual realised missing fraction (expected ~3%, not forced to exactly 3%) is recorded in truth_meta and must be reported alongside results.",
+      "effect": "y_obs(s,k,t) = NaN for masked cells; the underlying latent draw is retained in latent_truth as an evaluator-only / simulation-only value, never exposed to features, fitting or forecasts."
+    },
+    "non_negative_integer_construction": {
+      "distribution": "Negative Binomial (numpy parameterisation: n=dispersion_r, p=dispersion_r/(dispersion_r+mu))",
+      "dispersion_r": 8,
+      "mean_mu": "sku_base_level(k) * store_multiplier(s) * seasonal_multiplier(t) * promo_multiplier(s,k,t) * price_multiplier(s,k,t) * shift_multiplier(k,t)",
+      "sku_base_level_distribution": "LogNormal(mean=ln(20), sigma=0.4), drawn once per SKU via sku_base_level_seed",
+      "sku_base_level_distribution_params": { "mean_base": 20.0, "sigma": 0.4, "note": "Machine-readable; generator.py computes rng.lognormal(mean=np.log(mean_base), sigma=sigma, size=n_skus) from these fields instead of hardcoding np.log(20.0)/0.4. sku_base_level_distribution above is the human-readable restatement." },
+      "non_negativity": "Negative Binomial support is {0, 1, 2, ...}; no clipping is needed or applied at generation time.",
+      "draw_order": "Vectorised draw over the (store, sku, week) = (3, 30, 104) array in the row-major order fixed under entities.full_grid_shape_note."
+    }
+  },
+
+  "generator_seeds": {
+    "root_seed": 20260928,
+    "sku_base_level_seed": 1001,
+    "price_reference_seed": 1002,
+    "promo_schedule_seed": 1003,
+    "price_noise_seed": 1004,
+    "demand_noise_seed": 1005,
+    "missingness_seed": 1006,
+    "shift_selection_seed": 1007,
+    "note": "Each seed is passed directly to numpy.random.default_rng(seed). Seeds are independent literal integers, not spawned from root_seed at runtime, so behaviour cannot drift across numpy versions' SeedSequence spawning algorithm. root_seed is recorded for provenance only and is not itself used to derive the others."
+  },
+  "dev_fixture_seeds": {
+    "status": "DEVELOPMENT ONLY - never used for the frozen evaluation dataset or any reported metric",
+    "root_seed": 999999,
+    "sku_base_level_seed": 9001,
+    "price_reference_seed": 9002,
+    "promo_schedule_seed": 9003,
+    "price_noise_seed": 9004,
+    "demand_noise_seed": 9005,
+    "missingness_seed": 9006,
+    "shift_selection_seed": 9007,
+    "permitted_use": "Unit tests exercising generator/feature determinism, reconciliation and leakage properties. Test code must not assert on, tune to, or report any accuracy number derived from these seeds as if it were the frozen evaluation result."
+  },
+
+  "generator_version": "2.0.0",
+  "generator_module": "tabular_demand_forecast.generator",
+  "generator_hash_algorithm": "sha256",
+  "generator_hash": "cf10598d55d2986e577582af00fce6bd867b72f9b281ab15309b17d81b55220f",
+  "generator_hash_note": "SHA-256 of src/tabular_demand_forecast/generator.py at commit time, filled in just before this file is committed; any future edit to generator.py that changes frozen-dataset behaviour requires a new protocol_version and a new hash, never a silent replacement of this one. v2.0.0 recomputes this hash because generator.py's source text changed (distribution parameters moved into planted_effects.*_distribution_params, read at runtime instead of hardcoded) -- the frozen-seed dataset's values are unchanged (byte-identical to generator 1.0.0's output; see tests/test_generator.py::test_frozen_seeds_are_deterministic).",
+
+  "latent_truth_and_mask": {
+    "latent_truth_table": {
+      "grain": "(store, sku, week_index)",
+      "columns": ["store", "sku", "week_index", "mu", "y_latent", "is_shift_active", "seasonal_multiplier", "promo_multiplier", "price_multiplier", "shift_multiplier"],
+      "visibility": "Evaluator-only / simulation-only. Never available to feature construction, fitting, model selection or forecasts."
+    },
+    "mask_table": {
+      "grain": "(store, sku, week_index)",
+      "columns": ["store", "sku", "week_index", "observed"],
+      "note": "observed = False marks a masked (missing) cell. The mask is generated independently of mu/y_latent (missingness is not informative given the planted parameters)."
+    },
+    "observed_table": {
+      "grain": "(store, sku, week_index)",
+      "columns": ["store", "sku", "week_index", "y_obs"],
+      "construction": "y_obs = y_latent where observed else NaN"
+    },
+    "primary_metric_target_policy": "Primary metrics (step 2) use only observed finite y_obs targets. Missing-target rows are excluded from scoring, with their count reported explicitly per method/stratum; a missing target is never filled with 0 or any other value for scoring.",
+    "optional_diagnostic": "Any future diagnostic that scores against latent_truth (the pre-mask value) instead of y_obs must be a separately predeclared, explicitly labelled 'simulation-only' report section, never mixed into the primary observed-target metrics."
+  },
+
+  "missing_data_and_input_validation_policy": {
+    "generation_time": "Missingness is applied only to y_obs (the target); price/promo plans and week_of_year are never subject to the 3% missingness mechanism themselves, since they are plans/calendar facts, not observations. A feature can still be NaN transitively: a lag or rolling mean whose source week(s) were masked, OR a price/promo_flag whose plan is missing/late per features.price_and_promo.availability_enforcement.",
+    "no_backfill": "No backward fill or interpolation using future observations is applied anywhere in generation or feature construction.",
+    "ingestion_time_deferred_to_step_2": {
+      "note": "The following validations apply to CSV/CLI ingestion of already-generated data and are implemented with the step-2 CLI, not the step-1 generator (the generator itself cannot produce these malformed conditions):",
+      "must_fail_clearly_on": [
+        "duplicate (store, sku, week_index) keys",
+        "malformed target values (non-numeric)",
+        "negative observed target values",
+        "non-finite observed target values (NaN/inf appearing as a literal input value rather than the documented missing-row representation)",
+        "unknown store or sku identifiers outside the fixed entity lists"
+      ],
+      "well_formed_empty_input": "A header-only / zero-record input file is valid only where the specific step-2 input contract explicitly permits zero records for that source; it must be distinguished from a failed fetch, never silently treated as equivalent."
+    }
+  },
+
+  "models": {
+    "status": "SPECIFICATION ONLY for step 1; no estimator/baseline code exists yet",
+    "baselines": {
+      "naive_last_week": {
+        "prediction": "pred(t) = y_obs(t-1)",
+        "missing_history_fallback": "If y_obs(t-1) is missing (NaN), the prediction is UNAVAILABLE for that row (no substitution); the row is excluded from this baseline's scored set and counted as unavailable."
+      },
+      "seasonal_naive": {
+        "prediction": "pred(t) = y_obs(t-52)",
+        "missing_history_fallback": "If y_obs(t-52) is missing, the prediction is UNAVAILABLE for that row; excluded and counted, identical policy to naive_last_week."
+      },
+      "moving_average_4": {
+        "prediction": "pred(t) = mean of observed values among {y_obs(t-1)..y_obs(t-4)}, identical to features.roll_mean_4",
+        "min_observed_required": 3,
+        "missing_history_fallback": "If fewer than 3 of the 4 weeks are observed, the prediction is UNAVAILABLE for that row; excluded and counted, identical policy and threshold to the roll_mean_4 feature."
+      }
+    },
+    "gradient_boosting": {
+      "estimator": "sklearn.ensemble.HistGradientBoostingRegressor",
+      "random_state": 20260928,
+      "early_stopping": false,
+      "early_stopping_note": "Explicitly False so HistGradientBoostingRegressor's internal random train/validation split can never override the explicit time-based train/validation/test split defined in partitions above.",
+      "objective_loss": "squared_error",
+      "max_iter": "selected from pre_declared_grid.max_iter on validation MAE",
+      "learning_rate": "selected from pre_declared_grid.learning_rate on validation MAE",
+      "max_leaf_nodes": "selected from pre_declared_grid.max_leaf_nodes on validation MAE",
+      "min_samples_leaf": "selected from pre_declared_grid.min_samples_leaf on validation MAE",
+      "l2_regularization": "selected from pre_declared_grid.l2_regularization on validation MAE",
+      "missing_value_handling": "HistGradientBoostingRegressor's native NaN support is used for missing lag/rolling features (see features above); this native support settles only how NaN is routed at split time, it does NOT by itself settle target/baseline missing-value policy, which is fixed separately above.",
+      "pre_declared_grid": {
+        "max_iter": [100, 200, 300],
+        "learning_rate": [0.03, 0.1, 0.3],
+        "max_leaf_nodes": [15, 31],
+        "min_samples_leaf": [20],
+        "l2_regularization": [0.0, 1.0],
+        "grid_order_note": "Deterministic tie-breaking by declared grid order: iterate max_iter (outer) x learning_rate x max_leaf_nodes x min_samples_leaf x l2_regularization (inner) in the literal list order shown here; the first configuration achieving the minimum validation MAE on the fixed common eligible key set wins ties.",
+        "total_configurations": 36
+      },
+      "non_negative_prediction_clipping": {
+        "used": true,
+        "form": "pred = max(0, raw_prediction)",
+        "freeze_note": "This clipping, if used, is fixed identically before any test-set score is computed; it is applied uniformly to the GBM only (baselines are already non-negative by construction from observed history)."
+      }
+    },
+    "scaling_and_imputation": "No separate imputer or scaler is used; HistGradientBoostingRegressor requires neither (tree-based, scale-invariant, native NaN routing). If this changes in step 2, any imputer/scaler introduced is fit only on the training partition (train_AB) and re-applied, never refit, at validation/final-refit/test time. No imputer/scaler/fallback of any kind may be introduced ad hoc under this freeze; doing so requires a new protocol successor.",
+    "package_pinning": "scikit-learn==1.9.1 is pinned in requirements.txt NOW, at protocol-freeze time (see pre_fit_freeze.dependency_versions below), before any estimator code, fit or selection exists -- not deferred to step 2 as v1 stated -- so the version cannot be chosen post-hoc to influence a result. This protocol's grid and early_stopping=False setting are not contingent on a specific patch version, but the exact installed version is part of the frozen record."
+  },
+
+  "model_selection": {
+    "criterion": "Minimum validation MAE (see metrics.formulas) computed on stores A/B only, target weeks 79-91, over the fixed common eligible_key_set below.",
+    "eligible_key_set": "ONE configuration-independent common evaluation mask, fixed before any fitting and used unchanged for every one of the 36 grid configurations and all three baselines: validation_AB rows (target weeks 79-91, stores A/B) where y_obs(t) is observed (finite) AND lag1, lag52, roll_mean_4, price and promo_flag are all available (finite, non-missing) for that row. lag1/lag52/roll_mean_4 are the three baseline-prediction requirements (naive_last_week, seasonal_naive, moving_average_4 respectively); price/promo_flag are the chosen GBM plan requirements. lag2, lag4 and roll_mean_13 are DELIBERATELY EXCLUDED from this mask -- HistGradientBoostingRegressor's native missing-value routing is allowed to see them as NaN, so requiring them non-missing would over-restrict the common mask for no reason tied to the GBM's actual input contract. This mask does not vary by which model/baseline is being scored; a configuration/baseline may never be scored against a different row set than this one. If applying this mask yields zero rows, refuse selection and report 'no eligible rows for model selection' rather than relaxing the mask or inventing a new one. Each method's OWN coverage over this fixed mask (scored_rows / eligible_rows, see metrics.coverage_reporting) is separately reported and never changes which rows are in the common mask itself.",
+    "tie_breaking": "Deterministic: first configuration in pre_declared_grid order (see models.gradient_boosting.pre_declared_grid.grid_order_note) achieving the minimum eligible-key-set validation MAE.",
+    "failure_handling": "Every configuration's validation MAE (or explicit failure reason) is preserved and reported. If every configuration in pre_declared_grid fails, the protocol requires reporting 'gradient boosting model failed to select' rather than inventing or trying a new grid.",
+    "comparison_baselines": "All three fixed baselines (naive_last_week, seasonal_naive, moving_average_4) are compared on validation and on test, using the same eligible_key_set / own-coverage reporting split as the GBM (see metrics)."
+  },
+
+  "metrics": {
+    "formulas": {
+      "MAE": "sum(abs(pred - actual)) / N",
+      "signed_bias": "mean(pred - actual)",
+      "WAPE": "sum(abs(pred - actual)) / sum(abs(actual)); reported as a percentage after multiplying by 100 and labelling it '%'"
+    },
+    "zero_or_empty_denominator": "Two distinct cases, never conflated: (1) N == 0 for a given method/stratum -- MAE, signed_bias AND WAPE are all reported as 'N/A', together with the row/eligible/scored counts (which show 0). (2) N > 0 but sum(abs(actual)) == 0 for that method/stratum (every scored actual is exactly zero) -- WAPE ALONE is 'N/A' (its denominator is zero); MAE and signed_bias remain fully defined and are computed and reported normally over those N rows, never suppressed or forced to 'N/A' just because WAPE is undefined. Worked example: actual=[0], prediction=[2] -> N=1, MAE=2, signed_bias=2, WAPE='N/A'. Never report a metric as 0 or via a silent divide-by-zero in either case.",
+    "coverage_reporting": {
+      "per_method_per_stratum": ["eligible_rows (rows with an observed target)", "scored_rows (rows where this method actually produced a prediction)", "unavailable_rows (eligible rows this method could not score, e.g. missing lag history)", "coverage = scored_rows / eligible_rows"],
+      "common_support_metric": "A metric computed only on the intersection of rows scored by ALL compared methods (see model_selection.eligible_key_set for the validation-time instance of this), reported separately from each method's own-coverage metric; the two are never conflated.",
+      "row_weighting": "Overall MAE/WAPE/bias are row-weighted across all included rows. A macro (unweighted) per-store average, if shown, is computed and labelled separately as 'macro store average', never presented as the row-weighted overall figure."
+    },
+    "strata": ["overall", "per_store (A, B, C separately; C only has a test stratum)", "shifted_skus_only (the 2 planted-shift SKU IDs, test period)"],
+    "reporting_rule": "The TEST period (weeks 92-104) is reported exactly once, after protocol freeze and model selection are complete, including ALL baselines, the selected GBM configuration, and any configuration that failed during selection. Store A/B and Store C test results are reported separately, plus a secondary overall summary combining both.",
+    "no_inferential_claims": "No statistical significance test, confidence/calibration interval, or production-accuracy claim is derived from this single planted synthetic set. All numbers are labelled 'on this synthetic set only'.",
+    "required_fixtures": ["a zero-target row (actual == 0) exercising WAPE's denominator, confirming MAE/bias stay defined per zero_or_empty_denominator case (2)", "an all-missing stratum (e.g. a store/week slice with 0 eligible rows), confirming case (1)", "a failed model-selection configuration (if the grid search or fit raises/degenerates for a configuration, its failure is recorded, not silently dropped)", "a negative-prediction case exercising the non-negative clipping policy"]
+  },
+
+  "required_leakage_tests": {
+    "status": "Specified now; a subset implementable without any estimator is built and tested in step 1 (see tests/), the remainder (requiring model fitting) is deferred to step 2 and listed here so nothing is silently dropped.",
+    "step_1_testable_now": [
+      {
+        "id": "target_perturbation_no_backleak",
+        "description": "Perturbing y_obs at or after an origin must leave every feature computed for an earlier origin unchanged."
+      },
+      {
+        "id": "future_plan_availability_cutoff",
+        "description": "A plan (price/promo) whose available_at exceeds a given origin can never be joined into that origin's feature row; the join key is the target week itself, never a later week."
+      },
+      {
+        "id": "late_plan_same_target_week_is_unavailable",
+        "description": "A plan sharing its week_index with the target week t itself, but whose available_at has been delayed past origin(t) (e.g. a plan drawn up for week t but only communicated a week late), must yield NaN price/promo_flag for t -- availability is enforced per row against available_at, never inferred from week_index equality. This is the same-target case Astra's 2026-09-28 review found unenforced in v1 (features.py:59-80/126); v1's future_plan_availability_cutoff test above only varied week_index, not availability of the same target's own plan.",
+        "implemented_in": "tests/test_leakage.py::test_late_plan_for_same_target_is_not_available"
+      },
+      {
+        "id": "missing_week_does_not_shift_lag52",
+        "description": "A missing (masked) week must not cause lag52 to silently read a different week; lag52(t) is always y_obs at the exact calendar week t-52, or NaN if that exact week is missing -- never a nearest-available substitute."
+      },
+      {
+        "id": "no_cross_entity_rolling",
+        "description": "Per-(store,sku) rolling means never include another store's or SKU's observations."
+      },
+      {
+        "id": "train_validation_test_key_disjointness",
+        "description": "train_AB, validation_AB and test (AB+C) keys are disjoint by (store, sku, target_week); no key appears in two partitions."
+      }
+    ],
+    "deferred_to_step_2_with_estimator_code": [
+      {
+        "id": "held_out_store_does_not_affect_fitting",
+        "description": "Changing store C's data must leave fitted parameters and the selected configuration byte-for-byte unchanged, since C never enters training/validation."
+      },
+      {
+        "id": "zero_target_wape_fixture",
+        "description": "A zero-actual row must produce WAPE='N/A' with counts, while MAE and signed_bias remain defined (metrics.zero_or_empty_denominator case (2)), not a divide-by-zero, a silently dropped row, or MAE/bias also suppressed to N/A."
+      },
+      {
+        "id": "all_missing_stratum_fixture",
+        "description": "A stratum with zero eligible rows must report N=0 / N/A explicitly for all three metrics (case (1)), not be silently omitted from the report."
+      },
+      {
+        "id": "failed_model_fixture",
+        "description": "A grid configuration engineered to fail (e.g. degenerate hyperparameters) must appear in the reported grid search log with its failure reason, not be silently skipped."
+      },
+      {
+        "id": "negative_prediction_policy_fixture",
+        "description": "A configuration/input that would produce a negative raw prediction must be clipped per models.gradient_boosting.non_negative_prediction_clipping and the pre/post-clip values both recoverable from saved artifacts."
+      }
+    ]
+  },
+
+  "freeze_and_provenance": {
+    "frozen_before_test_inspection": ["schema", "calendar/date range", "row keys", "partitions", "feature list/order/dtypes", "availability rules", "missing-data policy", "package versions (pinned now, see pre_fit_freeze)", "estimator parameters and pre-declared grid", "metric formulas", "this file's own sha256 once committed"],
+    "code_and_config_hash_policy": "This protocol.json's own git blob hash at the reviewed commit, plus generator_hash and pre_fit_freeze.source_hashes below, together constitute the frozen evaluation configuration hash -- covering generator.py, calendar_utils.py, protocol.py and features.py, not generator.py alone as in v1. This file cannot embed its own post-commit hash (a self-hash cycle); its sha256 is computed externally (e.g. sha256sum / git cat-file) and quoted alongside the commit in review/session records, never inside the file itself. Any change to protocol.json or any hashed source file after Astra's review requires a new protocol_version and an explicit changelog entry, never a silent edit.",
+    "pre_fit_freeze": {
+      "purpose": "Astra's 2026-09-28 review, item 3: complete the pre-fit freeze before any estimator/evaluator code is written, so nothing about numeric representation or dependency behaviour can be chosen after seeing a result.",
+      "numeric_feature_dtypes": {
+        "lag1": "float64, NaN when the source week is missing/out-of-grid",
+        "lag2": "float64, NaN when the source week is missing/out-of-grid",
+        "lag4": "float64, NaN when the source week is missing/out-of-grid",
+        "lag52": "float64, NaN when the source week is missing/out-of-grid",
+        "roll_mean_4": "float64, NaN when fewer than min_observed_required weeks are observed in the window",
+        "roll_mean_13": "float64, NaN when fewer than min_observed_required weeks are observed in the window",
+        "price": "float64, NaN when the plan is missing or unavailable per features.price_and_promo.availability_enforcement",
+        "promo_flag": "float64 (missing-capable), NOT int/bool, even though its non-missing values are always 0.0/1.0 -- required so the same column can hold NaN for an unavailable plan without a separate sentinel or a second boolean 'is_available' column silently doing the real work",
+        "week_of_year": "int64, calendar-derived, always known at any origin, never missing",
+        "target_week": "int64, key column",
+        "store": "string/object, metadata/key column only, never a numeric model feature (see features.excluded)",
+        "sku": "string/object, metadata/key column only, never a numeric model feature (see features.excluded)",
+        "y_obs": "float64, NaN for a masked/missing target (never 0 or another sentinel)"
+      },
+      "dependency_versions": {
+        "python": "3.13.5 (repo .venv at freeze time; requires-python >=3.11 per pyproject.toml)",
+        "numpy": "2.5.3 (pinned in requirements.txt; used by generator.py and features.py)",
+        "pandas": "3.0.6 (pinned in requirements.txt; used throughout)",
+        "pytest": "9.1.1 (pinned in requirements.txt; test runner only, not part of the evaluation path)",
+        "scikit_learn": "1.9.1 (pinned in requirements.txt NOW, ahead of any estimator code -- the latest PyPI release as of this freeze, 2026-09-28 -- so step 2 cannot select a version after seeing a result)",
+        "freeze_note": "These are the exact versions recorded before any fit or score exists. A step-2 run manifest (see run_manifest_policy) re-records them from the actual installed environment at fit time and fails loudly if they drift from this list without a new protocol_version."
+      },
+      "source_hashes": {
+        "algorithm": "sha256",
+        "files": {
+          "src/tabular_demand_forecast/generator.py": "cf10598d55d2986e577582af00fce6bd867b72f9b281ab15309b17d81b55220f",
+          "src/tabular_demand_forecast/features.py": "91baf2376d12a016fb3b5601e8fef36b230cabe7b1d59611f143210ba4016913",
+          "src/tabular_demand_forecast/calendar_utils.py": "d59b06a31da68e7645da9f38ed396f34b9a0a2800f217cc29e800134c940ed71",
+          "src/tabular_demand_forecast/protocol.py": "076ad0a007b30e9cfffaddbefb806840477938e6d46f978c5a0f336c0ae60a0e"
+        },
+        "note": "v1 bound only generator_hash (generator.py); calendar_utils.py, protocol.py (the loader) and features.py could change without the stated binding changing, per Astra's review item 3. v2 binds all four step-1 implementation files that can affect the frozen dataset or its features. Filled in just before this file is committed, from the exact file contents being committed alongside it."
+      },
+      "run_manifest_policy": "Step 2 may implement estimator/evaluator code only after this v2 protocol is accepted. Before any fit or score, step 2 freezes a SEPARATE run manifest file (not this protocol.json, to avoid the self-hash cycle noted in code_and_config_hash_policy) recording: this protocol's version and sha256, every file hash in pre_fit_freeze.source_hashes, the step-2 model-selection/evaluator source file hash(es), and a dependency-lock hash (e.g. a pip freeze or lock-file hash) covering dependency_versions above. Any change to protocol.json or any hashed source file after that manifest is written requires a new protocol_version, a new manifest, and an explicit changelog/erratum entry -- never a silent replacement of an existing manifest or result."
+    },
+    "test_access_is_procedural": "Test-period rows exist in the generated data from the moment generation runs; the hold is procedural discipline (no code path may compute a metric against test rows, preview them for model selection, or branch model choice on them), not a claim that the data is technically inaccessible.",
+    "erratum_policy": "If a defect is found in already-published test results after this freeze, the fix produces a NEW version (protocol_version bump and/or a dated erratum file) with the original output preserved unmodified alongside it. A corrected result is never presented as if it were the original untouched run."
+  },
+
+  "outputs_deferred_to_later_steps": {
+    "cli": "train / evaluate / forecast subcommands -- step 2",
+    "forecasts_csv": "step 2; must include prediction keys (store, sku, target_week), actual (if known), origin timestamp, availability/status flags, and model/protocol hash columns per required_leakage_tests provenance requirements",
+    "html_report": "step 2/3; must record the exact installed Matplotlib licence and bundled third-party notices (read from installed package metadata, never inferred from Python's own licence) in LICENSES.md",
+    "real_future_forecast_caveat": "Any forecast issued for a week whose outcome does not yet exist carries no accuracy metric until that outcome is observed."
+  }
+}

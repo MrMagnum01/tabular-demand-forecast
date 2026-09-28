@@ -1,6 +1,8 @@
-"""The 5 leakage guard tests listed in protocol.json's
+"""The leakage guard tests listed in protocol.json's
 required_leakage_tests.step_1_testable_now, implemented without any
 estimator (none exists yet in this repo)."""
+import dataclasses
+
 import numpy as np
 import pandas as pd
 
@@ -85,6 +87,22 @@ def test_future_plan_availability_cutoff():
     row = frame[(frame["sku"] == "SKU001")].iloc[0]
     assert row["price"] != 123456.0
     assert row["promo_flag"] != 1
+
+
+def test_late_plan_for_same_target_is_not_available():
+    """id: late_plan_same_target_week_is_unavailable -- Astra's 2026-09-28
+    review probe (40-sessions/2026-09-28-astra-tabular-protocol-review-probe.py),
+    wired in unchanged. A plan sharing its week_index with the target week
+    itself, but delayed past origin(t), must be unavailable -- not just a
+    different week's plan being looked up for the wrong target."""
+    d = generate(GeneratorSeeds.dev_fixture())
+    p = d.plans.copy()
+    mask = (p.store == 'A') & (p.sku == 'SKU001') & (p.week_index == 56)
+    p.loc[mask, ['price', 'promo_flag']] = [123456., 1]
+    p.loc[mask, 'available_at'] += pd.Timedelta(days=7)
+    f = build_feature_frame(dataclasses.replace(d, plans=p), ['A'], [56])
+    r = f.loc[f.sku == 'SKU001'].iloc[0]
+    assert pd.isna(r.price) and pd.isna(r.promo_flag), r.to_dict()
 
 
 def test_missing_week_does_not_shift_lag52():
