@@ -1,0 +1,1359 @@
+{
+  "label": "on this synthetic set only",
+  "methods": [
+    "naive_last_week",
+    "seasonal_naive",
+    "moving_average_4",
+    "gradient_boosting"
+  ],
+  "shifted_skus": [
+    "SKU002",
+    "SKU003"
+  ],
+  "groups": {
+    "test_AB": {
+      "rows": 780,
+      "target_weeks": [
+        92,
+        104
+      ],
+      "stores": [
+        "A",
+        "B"
+      ],
+      "strata": {
+        "overall": {
+          "rows_in_stratum": 780,
+          "eligible_rows": 756,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 756,
+              "scored_rows": 732,
+              "unavailable_rows": 24,
+              "coverage": 0.9682539682539683,
+              "metrics": {
+                "N": 732,
+                "MAE": 9.561475409836065,
+                "signed_bias": -0.5450819672131147,
+                "WAPE": 50.776262333139876,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 756,
+              "scored_rows": 722,
+              "unavailable_rows": 34,
+              "coverage": 0.955026455026455,
+              "metrics": {
+                "N": 722,
+                "MAE": 10.18836565096953,
+                "signed_bias": 0.22437673130193905,
+                "WAPE": 53.52153667054714,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 756,
+              "scored_rows": 748,
+              "unavailable_rows": 8,
+              "coverage": 0.9894179894179894,
+              "metrics": {
+                "N": 748,
+                "MAE": 7.631461675579322,
+                "signed_bias": -1.1853832442067733,
+                "WAPE": 40.1317022872141,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 756,
+              "scored_rows": 756,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 756,
+                "MAE": 7.121752413572583,
+                "signed_bias": -3.1818399937550566,
+                "WAPE": 37.52470605422967,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 756,
+            "common_rows": 695,
+            "metrics": {
+              "naive_last_week": {
+                "N": 695,
+                "MAE": 9.594244604316547,
+                "signed_bias": -0.6848920863309352,
+                "WAPE": 50.62253264500456,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 695,
+                "MAE": 10.231654676258993,
+                "signed_bias": 0.3726618705035971,
+                "WAPE": 53.98572730033404,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 695,
+                "MAE": 7.657434052757793,
+                "signed_bias": -1.216906474820144,
+                "WAPE": 40.403254377973475,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 695,
+                "MAE": 7.116893441089311,
+                "signed_bias": -3.2089464722378422,
+                "WAPE": 37.55117629484567,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        },
+        "store_A": {
+          "rows_in_stratum": 390,
+          "eligible_rows": 379,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 379,
+              "scored_rows": 368,
+              "unavailable_rows": 11,
+              "coverage": 0.9709762532981531,
+              "metrics": {
+                "N": 368,
+                "MAE": 10.059782608695652,
+                "signed_bias": -0.592391304347826,
+                "WAPE": 49.26803300505723,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 379,
+              "scored_rows": 360,
+              "unavailable_rows": 19,
+              "coverage": 0.9498680738786279,
+              "metrics": {
+                "N": 360,
+                "MAE": 10.544444444444444,
+                "signed_bias": -0.20555555555555555,
+                "WAPE": 50.73509756749532,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 379,
+              "scored_rows": 374,
+              "unavailable_rows": 5,
+              "coverage": 0.9868073878627969,
+              "metrics": {
+                "N": 374,
+                "MAE": 7.880347593582887,
+                "signed_bias": -1.283645276292335,
+                "WAPE": 38.15210355987055,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 379,
+              "scored_rows": 379,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 379,
+                "MAE": 7.3498933864684,
+                "signed_bias": -3.8464548814222566,
+                "WAPE": 35.5534089785772,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 379,
+            "common_rows": 346,
+            "metrics": {
+              "naive_last_week": {
+                "N": 346,
+                "MAE": 10.124277456647398,
+                "signed_bias": -0.8757225433526011,
+                "WAPE": 49.22709387296234,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 346,
+                "MAE": 10.479768786127167,
+                "signed_bias": -0.017341040462427744,
+                "WAPE": 50.95559302979203,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 346,
+                "MAE": 7.905105973025048,
+                "signed_bias": -1.254335260115607,
+                "WAPE": 38.436855911560805,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 346,
+                "MAE": 7.304332843624466,
+                "signed_bias": -3.7915095268877717,
+                "WAPE": 35.51572742965241,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        },
+        "store_B": {
+          "rows_in_stratum": 390,
+          "eligible_rows": 377,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 377,
+              "scored_rows": 364,
+              "unavailable_rows": 13,
+              "coverage": 0.9655172413793104,
+              "metrics": {
+                "N": 364,
+                "MAE": 9.057692307692308,
+                "signed_bias": -0.49725274725274726,
+                "WAPE": 52.58373205741626,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 377,
+              "scored_rows": 362,
+              "unavailable_rows": 15,
+              "coverage": 0.9602122015915119,
+              "metrics": {
+                "N": 362,
+                "MAE": 9.834254143646408,
+                "signed_bias": 0.6519337016574586,
+                "WAPE": 56.85084637496007,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 377,
+              "scored_rows": 374,
+              "unavailable_rows": 3,
+              "coverage": 0.9920424403183024,
+              "metrics": {
+                "N": 374,
+                "MAE": 7.382575757575758,
+                "signed_bias": -1.087121212121212,
+                "WAPE": 42.48474124224239,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 377,
+              "scored_rows": 377,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 377,
+                "MAE": 6.8924011437383275,
+                "signed_bias": -2.5136992976652195,
+                "WAPE": 39.896134364952395,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 377,
+            "common_rows": 349,
+            "metrics": {
+              "naive_last_week": {
+                "N": 349,
+                "MAE": 9.068767908309455,
+                "signed_bias": -0.49570200573065903,
+                "WAPE": 52.26221928665786,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 349,
+                "MAE": 9.98567335243553,
+                "signed_bias": 0.7593123209169055,
+                "WAPE": 57.54623513870541,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 349,
+                "MAE": 7.41189111747851,
+                "signed_bias": -1.1797994269340975,
+                "WAPE": 42.71383751651255,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 349,
+                "MAE": 6.931065265510046,
+                "signed_bias": -2.631391122928744,
+                "WAPE": 39.942895932348186,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        },
+        "shifted_skus_only": {
+          "rows_in_stratum": 52,
+          "eligible_rows": 50,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 50,
+              "scored_rows": 48,
+              "unavailable_rows": 2,
+              "coverage": 0.96,
+              "metrics": {
+                "N": 48,
+                "MAE": 7.9375,
+                "signed_bias": 0.3958333333333333,
+                "WAPE": 54.350927246790306,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 50,
+              "scored_rows": 46,
+              "unavailable_rows": 4,
+              "coverage": 0.92,
+              "metrics": {
+                "N": 46,
+                "MAE": 9.608695652173912,
+                "signed_bias": -1.826086956521739,
+                "WAPE": 60.30013642564802,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 50,
+              "scored_rows": 50,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 50,
+                "MAE": 7.058333333333333,
+                "signed_bias": -1.0383333333333333,
+                "WAPE": 44.729615547106036,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 50,
+              "scored_rows": 50,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 50,
+                "MAE": 6.932348231696779,
+                "signed_bias": -2.6586313734991016,
+                "WAPE": 43.931230872603166,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 50,
+            "common_rows": 45,
+            "metrics": {
+              "naive_last_week": {
+                "N": 45,
+                "MAE": 8.2,
+                "signed_bias": 0.15555555555555556,
+                "WAPE": 54.666666666666664,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 45,
+                "MAE": 9.533333333333333,
+                "signed_bias": -1.5777777777777777,
+                "WAPE": 63.55555555555556,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 45,
+                "MAE": 6.842592592592592,
+                "signed_bias": -0.8796296296296295,
+                "WAPE": 45.61728395061728,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 45,
+                "MAE": 6.408297714428033,
+                "signed_bias": -2.060401479396987,
+                "WAPE": 42.72198476285355,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        }
+      }
+    },
+    "test_C": {
+      "rows": 390,
+      "target_weeks": [
+        92,
+        104
+      ],
+      "stores": [
+        "C"
+      ],
+      "strata": {
+        "overall": {
+          "rows_in_stratum": 390,
+          "eligible_rows": 378,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 378,
+              "scored_rows": 365,
+              "unavailable_rows": 13,
+              "coverage": 0.9656084656084656,
+              "metrics": {
+                "N": 365,
+                "MAE": 11.479452054794521,
+                "signed_bias": -0.3232876712328767,
+                "WAPE": 48.305280147567444,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 378,
+              "scored_rows": 366,
+              "unavailable_rows": 12,
+              "coverage": 0.9682539682539683,
+              "metrics": {
+                "N": 366,
+                "MAE": 12.245901639344263,
+                "signed_bias": -0.8360655737704918,
+                "WAPE": 52.085996513654855,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 378,
+              "scored_rows": 374,
+              "unavailable_rows": 4,
+              "coverage": 0.9894179894179894,
+              "metrics": {
+                "N": 374,
+                "MAE": 9.47482174688057,
+                "signed_bias": -0.607620320855615,
+                "WAPE": 40.135726960395665,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 378,
+              "scored_rows": 378,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 378,
+                "MAE": 8.817000264067676,
+                "signed_bias": -3.9456629673247465,
+                "WAPE": 37.064347195480224,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 378,
+            "common_rows": 351,
+            "metrics": {
+              "naive_last_week": {
+                "N": 351,
+                "MAE": 11.051282051282051,
+                "signed_bias": -0.1282051282051282,
+                "WAPE": 47.53676470588235,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 351,
+                "MAE": 12.108262108262108,
+                "signed_bias": -0.6951566951566952,
+                "WAPE": 52.083333333333336,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 351,
+                "MAE": 9.236942070275402,
+                "signed_bias": -0.33285849952516616,
+                "WAPE": 39.732434640522875,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 351,
+                "MAE": 8.532448155195379,
+                "signed_bias": -3.6868746809752344,
+                "WAPE": 36.702074785215416,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        },
+        "store_C": {
+          "rows_in_stratum": 390,
+          "eligible_rows": 378,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 378,
+              "scored_rows": 365,
+              "unavailable_rows": 13,
+              "coverage": 0.9656084656084656,
+              "metrics": {
+                "N": 365,
+                "MAE": 11.479452054794521,
+                "signed_bias": -0.3232876712328767,
+                "WAPE": 48.305280147567444,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 378,
+              "scored_rows": 366,
+              "unavailable_rows": 12,
+              "coverage": 0.9682539682539683,
+              "metrics": {
+                "N": 366,
+                "MAE": 12.245901639344263,
+                "signed_bias": -0.8360655737704918,
+                "WAPE": 52.085996513654855,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 378,
+              "scored_rows": 374,
+              "unavailable_rows": 4,
+              "coverage": 0.9894179894179894,
+              "metrics": {
+                "N": 374,
+                "MAE": 9.47482174688057,
+                "signed_bias": -0.607620320855615,
+                "WAPE": 40.135726960395665,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 378,
+              "scored_rows": 378,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 378,
+                "MAE": 8.817000264067676,
+                "signed_bias": -3.9456629673247465,
+                "WAPE": 37.064347195480224,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 378,
+            "common_rows": 351,
+            "metrics": {
+              "naive_last_week": {
+                "N": 351,
+                "MAE": 11.051282051282051,
+                "signed_bias": -0.1282051282051282,
+                "WAPE": 47.53676470588235,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 351,
+                "MAE": 12.108262108262108,
+                "signed_bias": -0.6951566951566952,
+                "WAPE": 52.083333333333336,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 351,
+                "MAE": 9.236942070275402,
+                "signed_bias": -0.33285849952516616,
+                "WAPE": 39.732434640522875,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 351,
+                "MAE": 8.532448155195379,
+                "signed_bias": -3.6868746809752344,
+                "WAPE": 36.702074785215416,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        },
+        "shifted_skus_only": {
+          "rows_in_stratum": 26,
+          "eligible_rows": 24,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 24,
+              "scored_rows": 22,
+              "unavailable_rows": 2,
+              "coverage": 0.9166666666666666,
+              "metrics": {
+                "N": 22,
+                "MAE": 9.363636363636363,
+                "signed_bias": -1.9090909090909092,
+                "WAPE": 36.077057793345006,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 24,
+              "scored_rows": 24,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 24,
+                "MAE": 19.25,
+                "signed_bias": -6.75,
+                "WAPE": 78.839590443686,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 24,
+              "scored_rows": 24,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 24,
+                "MAE": 12.673611111111112,
+                "signed_bias": -2.701388888888888,
+                "WAPE": 51.905574516496024,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 24,
+              "scored_rows": 24,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 24,
+                "MAE": 11.972492113484984,
+                "signed_bias": -5.389340081763223,
+                "WAPE": 49.03409739311256,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 24,
+            "common_rows": 22,
+            "metrics": {
+              "naive_last_week": {
+                "N": 22,
+                "MAE": 9.363636363636363,
+                "signed_bias": -1.9090909090909092,
+                "WAPE": 36.077057793345006,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 22,
+                "MAE": 20.59090909090909,
+                "signed_bias": -7.7727272727272725,
+                "WAPE": 79.33450087565674,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 22,
+                "MAE": 13.522727272727273,
+                "signed_bias": -2.916666666666666,
+                "WAPE": 52.1015761821366,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 22,
+                "MAE": 12.823446170481823,
+                "signed_bias": -6.04515006715512,
+                "WAPE": 49.40732324879161,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        }
+      }
+    },
+    "test_overall": {
+      "rows": 1170,
+      "target_weeks": [
+        92,
+        104
+      ],
+      "stores": [
+        "A",
+        "B",
+        "C"
+      ],
+      "strata": {
+        "overall": {
+          "rows_in_stratum": 1170,
+          "eligible_rows": 1134,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 1134,
+              "scored_rows": 1097,
+              "unavailable_rows": 37,
+              "coverage": 0.9673721340388007,
+              "metrics": {
+                "N": 1097,
+                "MAE": 10.199635369188696,
+                "signed_bias": -0.47128532360984504,
+                "WAPE": 49.8218897497551,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 1134,
+              "scored_rows": 1088,
+              "unavailable_rows": 46,
+              "coverage": 0.9594356261022927,
+              "metrics": {
+                "N": 1088,
+                "MAE": 10.880514705882353,
+                "signed_bias": -0.1323529411764706,
+                "WAPE": 52.968812922278396,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 1134,
+              "scored_rows": 1122,
+              "unavailable_rows": 12,
+              "coverage": 0.9894179894179894,
+              "metrics": {
+                "N": 1122,
+                "MAE": 8.24591503267974,
+                "signed_bias": -0.9927956030897208,
+                "WAPE": 40.13324368484218,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 1134,
+              "scored_rows": 1134,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 1134,
+                "MAE": 7.686835030404281,
+                "signed_bias": -3.4364476516116196,
+                "WAPE": 37.347347577028515,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 1134,
+            "common_rows": 1046,
+            "metrics": {
+              "naive_last_week": {
+                "N": 1046,
+                "MAE": 10.083173996175908,
+                "signed_bias": -0.4980879541108987,
+                "WAPE": 49.44215263453966,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 1046,
+                "MAE": 10.861376673040153,
+                "signed_bias": 0.014340344168260038,
+                "WAPE": 53.25801612600788,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 1046,
+                "MAE": 8.187460165710645,
+                "signed_bias": -0.9202517527087316,
+                "WAPE": 40.14664979061192,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 1046,
+                "MAE": 7.591902718958556,
+                "signed_bias": -3.369321999261575,
+                "WAPE": 37.22637466731038,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        },
+        "store_A": {
+          "rows_in_stratum": 390,
+          "eligible_rows": 379,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 379,
+              "scored_rows": 368,
+              "unavailable_rows": 11,
+              "coverage": 0.9709762532981531,
+              "metrics": {
+                "N": 368,
+                "MAE": 10.059782608695652,
+                "signed_bias": -0.592391304347826,
+                "WAPE": 49.26803300505723,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 379,
+              "scored_rows": 360,
+              "unavailable_rows": 19,
+              "coverage": 0.9498680738786279,
+              "metrics": {
+                "N": 360,
+                "MAE": 10.544444444444444,
+                "signed_bias": -0.20555555555555555,
+                "WAPE": 50.73509756749532,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 379,
+              "scored_rows": 374,
+              "unavailable_rows": 5,
+              "coverage": 0.9868073878627969,
+              "metrics": {
+                "N": 374,
+                "MAE": 7.880347593582887,
+                "signed_bias": -1.283645276292335,
+                "WAPE": 38.15210355987055,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 379,
+              "scored_rows": 379,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 379,
+                "MAE": 7.3498933864684,
+                "signed_bias": -3.8464548814222566,
+                "WAPE": 35.5534089785772,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 379,
+            "common_rows": 346,
+            "metrics": {
+              "naive_last_week": {
+                "N": 346,
+                "MAE": 10.124277456647398,
+                "signed_bias": -0.8757225433526011,
+                "WAPE": 49.22709387296234,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 346,
+                "MAE": 10.479768786127167,
+                "signed_bias": -0.017341040462427744,
+                "WAPE": 50.95559302979203,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 346,
+                "MAE": 7.905105973025048,
+                "signed_bias": -1.254335260115607,
+                "WAPE": 38.436855911560805,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 346,
+                "MAE": 7.304332843624466,
+                "signed_bias": -3.7915095268877717,
+                "WAPE": 35.51572742965241,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        },
+        "store_B": {
+          "rows_in_stratum": 390,
+          "eligible_rows": 377,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 377,
+              "scored_rows": 364,
+              "unavailable_rows": 13,
+              "coverage": 0.9655172413793104,
+              "metrics": {
+                "N": 364,
+                "MAE": 9.057692307692308,
+                "signed_bias": -0.49725274725274726,
+                "WAPE": 52.58373205741626,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 377,
+              "scored_rows": 362,
+              "unavailable_rows": 15,
+              "coverage": 0.9602122015915119,
+              "metrics": {
+                "N": 362,
+                "MAE": 9.834254143646408,
+                "signed_bias": 0.6519337016574586,
+                "WAPE": 56.85084637496007,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 377,
+              "scored_rows": 374,
+              "unavailable_rows": 3,
+              "coverage": 0.9920424403183024,
+              "metrics": {
+                "N": 374,
+                "MAE": 7.382575757575758,
+                "signed_bias": -1.087121212121212,
+                "WAPE": 42.48474124224239,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 377,
+              "scored_rows": 377,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 377,
+                "MAE": 6.8924011437383275,
+                "signed_bias": -2.5136992976652195,
+                "WAPE": 39.896134364952395,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 377,
+            "common_rows": 349,
+            "metrics": {
+              "naive_last_week": {
+                "N": 349,
+                "MAE": 9.068767908309455,
+                "signed_bias": -0.49570200573065903,
+                "WAPE": 52.26221928665786,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 349,
+                "MAE": 9.98567335243553,
+                "signed_bias": 0.7593123209169055,
+                "WAPE": 57.54623513870541,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 349,
+                "MAE": 7.41189111747851,
+                "signed_bias": -1.1797994269340975,
+                "WAPE": 42.71383751651255,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 349,
+                "MAE": 6.931065265510046,
+                "signed_bias": -2.631391122928744,
+                "WAPE": 39.942895932348186,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        },
+        "store_C": {
+          "rows_in_stratum": 390,
+          "eligible_rows": 378,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 378,
+              "scored_rows": 365,
+              "unavailable_rows": 13,
+              "coverage": 0.9656084656084656,
+              "metrics": {
+                "N": 365,
+                "MAE": 11.479452054794521,
+                "signed_bias": -0.3232876712328767,
+                "WAPE": 48.305280147567444,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 378,
+              "scored_rows": 366,
+              "unavailable_rows": 12,
+              "coverage": 0.9682539682539683,
+              "metrics": {
+                "N": 366,
+                "MAE": 12.245901639344263,
+                "signed_bias": -0.8360655737704918,
+                "WAPE": 52.085996513654855,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 378,
+              "scored_rows": 374,
+              "unavailable_rows": 4,
+              "coverage": 0.9894179894179894,
+              "metrics": {
+                "N": 374,
+                "MAE": 9.47482174688057,
+                "signed_bias": -0.607620320855615,
+                "WAPE": 40.135726960395665,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 378,
+              "scored_rows": 378,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 378,
+                "MAE": 8.817000264067676,
+                "signed_bias": -3.9456629673247465,
+                "WAPE": 37.064347195480224,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 378,
+            "common_rows": 351,
+            "metrics": {
+              "naive_last_week": {
+                "N": 351,
+                "MAE": 11.051282051282051,
+                "signed_bias": -0.1282051282051282,
+                "WAPE": 47.53676470588235,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 351,
+                "MAE": 12.108262108262108,
+                "signed_bias": -0.6951566951566952,
+                "WAPE": 52.083333333333336,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 351,
+                "MAE": 9.236942070275402,
+                "signed_bias": -0.33285849952516616,
+                "WAPE": 39.732434640522875,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 351,
+                "MAE": 8.532448155195379,
+                "signed_bias": -3.6868746809752344,
+                "WAPE": 36.702074785215416,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        },
+        "shifted_skus_only": {
+          "rows_in_stratum": 78,
+          "eligible_rows": 74,
+          "own_coverage": {
+            "naive_last_week": {
+              "eligible_rows": 74,
+              "scored_rows": 70,
+              "unavailable_rows": 4,
+              "coverage": 0.9459459459459459,
+              "metrics": {
+                "N": 70,
+                "MAE": 8.385714285714286,
+                "signed_bias": -0.32857142857142857,
+                "WAPE": 46.14779874213836,
+                "WAPE_unit": "%"
+              }
+            },
+            "seasonal_naive": {
+              "eligible_rows": 74,
+              "scored_rows": 70,
+              "unavailable_rows": 4,
+              "coverage": 0.9459459459459459,
+              "metrics": {
+                "N": 70,
+                "MAE": 12.914285714285715,
+                "signed_bias": -3.5142857142857142,
+                "WAPE": 68.53677028051554,
+                "WAPE_unit": "%"
+              }
+            },
+            "moving_average_4": {
+              "eligible_rows": 74,
+              "scored_rows": 74,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 74,
+                "MAE": 8.879504504504503,
+                "signed_bias": -1.5777027027027029,
+                "WAPE": 47.78787878787878,
+                "WAPE_unit": "%"
+              }
+            },
+            "gradient_boosting": {
+              "eligible_rows": 74,
+              "scored_rows": 74,
+              "unavailable_rows": 0,
+              "coverage": 1.0,
+              "metrics": {
+                "N": 74,
+                "MAE": 8.566989490655116,
+                "signed_bias": -3.5442666302334103,
+                "WAPE": 46.10597980425298,
+                "WAPE_unit": "%"
+              }
+            }
+          },
+          "common_support": {
+            "definition": "rows in this stratum with an observed target that EVERY compared method scored",
+            "methods_compared": [
+              "naive_last_week",
+              "seasonal_naive",
+              "moving_average_4",
+              "gradient_boosting"
+            ],
+            "eligible_rows": 74,
+            "common_rows": 67,
+            "metrics": {
+              "naive_last_week": {
+                "N": 67,
+                "MAE": 8.582089552238806,
+                "signed_bias": -0.5223880597014925,
+                "WAPE": 46.14767255216694,
+                "WAPE_unit": "%"
+              },
+              "seasonal_naive": {
+                "N": 67,
+                "MAE": 13.164179104477611,
+                "signed_bias": -3.611940298507463,
+                "WAPE": 70.78651685393258,
+                "WAPE_unit": "%"
+              },
+              "moving_average_4": {
+                "N": 67,
+                "MAE": 9.036069651741293,
+                "signed_bias": -1.548507462686567,
+                "WAPE": 48.5888175494917,
+                "WAPE_unit": "%"
+              },
+              "gradient_boosting": {
+                "N": 67,
+                "MAE": 8.514764371639723,
+                "signed_bias": -3.3688263888101058,
+                "WAPE": 45.7856511155587,
+                "WAPE_unit": "%"
+              }
+            }
+          }
+        }
+      },
+      "role": "secondary summary (test_AB + test_C); primary reporting is test_AB and test_C separately",
+      "macro_store_average": {
+        "naive_last_week": {
+          "label": "macro store average (unweighted mean over stores; NOT the row-weighted overall)",
+          "MAE": 10.198975657060828,
+          "MAE_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "WAPE": 50.052348403346976,
+          "WAPE_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "signed_bias": -0.4709772409444834,
+          "signed_bias_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "WAPE_unit": "%"
+        },
+        "seasonal_naive": {
+          "label": "macro store average (unweighted mean over stores; NOT the row-weighted overall)",
+          "MAE": 10.874866742478373,
+          "MAE_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "WAPE": 53.22398015203675,
+          "WAPE_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "signed_bias": -0.12989580922286295,
+          "signed_bias_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "WAPE_unit": "%"
+        },
+        "moving_average_4": {
+          "label": "macro store average (unweighted mean over stores; NOT the row-weighted overall)",
+          "MAE": 8.245915032679738,
+          "MAE_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "WAPE": 40.2575239208362,
+          "WAPE_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "signed_bias": -0.9927956030897205,
+          "signed_bias_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "WAPE_unit": "%"
+        },
+        "gradient_boosting": {
+          "label": "macro store average (unweighted mean over stores; NOT the row-weighted overall)",
+          "MAE": 7.686431598091468,
+          "MAE_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "WAPE": 37.50463017966994,
+          "WAPE_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "signed_bias": -3.4352723821374074,
+          "signed_bias_stores_included": [
+            "store_A",
+            "store_B",
+            "store_C"
+          ],
+          "WAPE_unit": "%"
+        }
+      }
+    }
+  },
+  "gbm_non_negative_clipping": {
+    "form": "pred = max(0, raw_prediction)",
+    "rows_with_raw_prediction": 1170,
+    "rows_with_negative_raw": 0,
+    "min_raw_prediction": 7.608686848143085
+  },
+  "seeds": "frozen (protocol generator_seeds) - the evaluation dataset",
+  "selected_config": {
+    "max_iter": 200,
+    "learning_rate": 0.03,
+    "max_leaf_nodes": 15,
+    "min_samples_leaf": 20,
+    "l2_regularization": 1.0
+  },
+  "selected_index": 13,
+  "shift_sku_magnitude": {
+    "SKU002": 1.6,
+    "SKU003": 0.6
+  },
+  "realized_missing_fraction": 0.030448717948717948,
+  "provenance": {
+    "model_hash": "1c4f5109597839e232a0f4666443347e3d45075d918f14a6a5c7d292a57d5c0a",
+    "protocol_hash": "a9604f02542bedc616de8c4c53f479ecbd20eabecd9f25c7a134ebe84e06b9eb",
+    "manifest_hash": "7275e08eaf7ed88067f9a8ce63a597e92f6546b0be3987bbf8e1606ec37878cf"
+  },
+  "created_utc": "2026-09-28T03:43:49+00:00"
+}

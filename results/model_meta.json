@@ -1,0 +1,38 @@
+{
+  "seeds": "frozen",
+  "estimator": "sklearn.ensemble.HistGradientBoostingRegressor",
+  "selected_index": 13,
+  "config": {
+    "max_iter": 200,
+    "learning_rate": 0.03,
+    "max_leaf_nodes": 15,
+    "min_samples_leaf": 20,
+    "l2_regularization": 1.0
+  },
+  "feature_columns": [
+    "lag1",
+    "lag2",
+    "lag4",
+    "lag52",
+    "roll_mean_4",
+    "roll_mean_13",
+    "price",
+    "promo_flag",
+    "week_of_year"
+  ],
+  "final_refit_rows": 2274,
+  "model_file": "model.joblib",
+  "model_sha256": "1c4f5109597839e232a0f4666443347e3d45075d918f14a6a5c7d292a57d5c0a",
+  "protocol_sha256": "a9604f02542bedc616de8c4c53f479ecbd20eabecd9f25c7a134ebe84e06b9eb",
+  "manifest_sha256": "7275e08eaf7ed88067f9a8ce63a597e92f6546b0be3987bbf8e1606ec37878cf",
+  "python_version": "3.13.5",
+  "package_versions": {
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1",
+    "joblib": "1.6.0",
+    "matplotlib": "3.11.2"
+  },
+  "created_utc": "2026-09-28T03:43:42+00:00"
+}
