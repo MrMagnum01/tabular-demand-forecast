@@ -6,6 +6,11 @@ OSI status is derived mechanically from each package's own metadata; anything un
 
 Packages: 23. Flagged: 2 (see the OSI status column and the notes below).
 
+Every flagged package's OWN top-level licence (the parent package identifier itself) is OSI-approved; the
+flags below are on individual BUNDLED components inside the installed wheel (a data file, a font, a compiled
+third-party library), not on numpy or matplotlib as distributed. Bundled non-OSI components pending CEO
+exception: see "Notes on flags" and the matplotlib bundled-component table below for the exact inventory.
+
 | package | version | role | License-Expression | License field | licence classifiers | License-File entries | OSI status |
 |---|---|---|---|---|---|---|---|
 | cloudpickle | 3.1.2 | transitive | - | `BSD-3-Clause` | OSI Approved :: BSD License | LICENSE | OSI-approved (License field is SPDX id BSD-3-Clause) |

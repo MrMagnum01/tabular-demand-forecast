@@ -1,5 +1,7 @@
 """Ingestion validation (protocol missing_data_and_input_validation_policy)
 and provenance-gate tests, on hand-built tables only."""
+import copy
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -61,6 +63,19 @@ def test_frozen_run_requires_manifest(tmp_path, monkeypatch):
 
 def test_frozen_source_hashes_match_protocol():
     provenance.check_frozen_sources()
+
+
+def test_null_evaluator_hash_is_rejected_not_treated_as_wildcard(monkeypatch):
+    """Astra HOLD clause 2a (2026-09-28-astra-tabular-step2-review.md finding
+    2; probe null_evaluator_hash): a manifest whose recorded hash for an
+    evaluator source file is null must NOT be accepted as a match for
+    whatever that file's current hash happens to be. Every evaluator source
+    file's exact hash is required, with no None wildcard."""
+    real_manifest = copy.deepcopy(provenance.load_manifest())
+    real_manifest["evaluator_source_hashes"]["src/tabular_demand_forecast/evaluate.py"] = None
+    monkeypatch.setattr(provenance, "load_manifest", lambda path=provenance.MANIFEST_PATH: real_manifest)
+    with pytest.raises(provenance.ProvenanceError, match="evaluator source"):
+        provenance.verify_run_environment(require_manifest=True)
 
 
 def test_parse_lock_format(tmp_path):

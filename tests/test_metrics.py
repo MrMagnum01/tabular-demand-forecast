@@ -4,7 +4,7 @@ zero_target_wape_fixture and all_missing_stratum_fixture."""
 import numpy as np
 import pytest
 
-from tabular_demand_forecast.metrics import NA, coverage, macro_store_average, point_metrics, stratum_report
+from tabular_demand_forecast.metrics import NA, MethodFailure, coverage, macro_store_average, point_metrics, stratum_report
 
 
 def test_formulas():
@@ -65,6 +65,25 @@ def test_non_finite_inputs_are_rejected_not_silently_scored():
         point_metrics([np.nan], [1.0])
     with pytest.raises(ValueError):
         point_metrics([1.0], [np.nan])
+
+
+def test_nonfinite_prediction_fails_the_method_not_dropped_from_coverage():
+    """Astra HOLD clause 3 (2026-09-28-astra-tabular-step2-review.md finding 3;
+    probe nonfinite_prediction_scoring): actual=[1, 100], predicted=[1, inf].
+    Before the fix, isfinite() alone marked the Inf row 'unavailable', so it
+    silently left the scored set and MAE was reported as 0 on the one
+    remaining row. A non-finite prediction on an eligible row must instead
+    fail the method loudly, never quietly improve its own coverage/metrics."""
+    with pytest.raises(MethodFailure):
+        stratum_report(np.array([1.0, 100.0]), {"m": np.array([1.0, np.inf])}, np.array([True, True]))
+    with pytest.raises(MethodFailure):
+        stratum_report(np.array([1.0, 100.0]), {"m": np.array([1.0, -np.inf])}, np.array([True, True]))
+    # a NaN prediction is still the legitimate declared-unavailable signal, not a failure
+    rep = stratum_report(np.array([1.0, 100.0]), {"m": np.array([1.0, np.nan])}, np.array([True, True]))
+    assert rep["own_coverage"]["m"]["unavailable_rows"] == 1
+    # non-finite predictions outside the eligible set (target itself missing) don't trigger a failure
+    rep2 = stratum_report(np.array([1.0, np.nan]), {"m": np.array([1.0, np.inf])}, np.array([True, True]))
+    assert rep2["eligible_rows"] == 1
 
 
 def test_own_coverage_and_common_support_are_separate():

@@ -16,6 +16,7 @@ from tabular_demand_forecast.calendar_utils import week_start_date
 from tabular_demand_forecast.csv_safety import write_safe_csv
 from tabular_demand_forecast.evaluate import (
     FUTURE_FORECAST_CAVEAT,
+    NO_PLAN_NOTE,
     build_forecasts_frame,
     future_forecast,
     method_predictions,
@@ -104,18 +105,52 @@ def test_baselines_equal_their_defining_features():
         np.testing.assert_array_equal(base[name], frame[col].to_numpy(dtype=float))
 
 
-def test_future_forecast_refuses_in_range_week_and_carries_caveat():
+def test_future_forecast_refuses_in_range_week():
     data = _tiny_data()
     model = _negative_model()
     with pytest.raises(ValueError):
         future_forecast(model, data, [104], PROV)
+
+
+def test_future_forecast_no_plan_yields_unavailable_row_not_numeric():
+    """Astra HOLD clause 1 (2026-09-28-astra-tabular-step2-review.md finding 1):
+    week 105 has no price/promo plan. Protocol v2's plan_missing_policy makes
+    price/promo_flag UNAVAILABLE for that row, so the GBM is unavailable for
+    it too -- the forecast must be an explicit unavailable_plan row with no
+    numeric prediction, never a native-NaN-routed number."""
+    data = _tiny_data()
+    model = _negative_model()
     out = future_forecast(model, data, [105], PROV)
     assert len(out) == 1
     assert np.isnan(out["price"].iloc[0]) and np.isnan(out["promo_flag"].iloc[0])  # no fabricated plan
     assert out["lag1"].iloc[0] == 104 % 7
-    assert FUTURE_FORECAST_CAVEAT in out["caveat"].iloc[0]
-    assert "plan_unavailable" in out["status"].iloc[0]
+    assert out["status"].iloc[0] == "unavailable_plan"
+    assert np.isnan(out["prediction"].iloc[0])
+    assert np.isnan(out["prediction_raw_preclip"].iloc[0])
+    assert not bool(out["clipped"].iloc[0])
+    assert NO_PLAN_NOTE in out["caveat"].iloc[0]
+
+
+def test_future_forecast_with_available_plan_still_forecasts_numerically():
+    """Contrast case: when a plan IS available for the future week, the
+    protocol's rule for GBM availability is satisfied and a normal numeric
+    forecast (with the usual no-outcome-yet caveat) is produced."""
+    data = _tiny_data()
+    plan_row = pd.DataFrame([{
+        "store": "A", "sku": "SKU001", "week_index": 105,
+        "price": 10.0, "promo_flag": 0.0,
+        "available_at": pd.Timestamp(week_start_date(105)) - pd.Timedelta(days=7),
+    }])
+    import dataclasses
+    data = dataclasses.replace(data, plans=pd.concat([data.plans, plan_row], ignore_index=True))
+    model = _negative_model()
+    out = future_forecast(model, data, [105], PROV)
+    assert len(out) == 1
+    assert out["status"].iloc[0] == "forecast_no_outcome_yet"
+    assert np.isfinite(out["prediction"].iloc[0])
     assert out["prediction"].iloc[0] == max(0.0, out["prediction_raw_preclip"].iloc[0])
+    assert FUTURE_FORECAST_CAVEAT in out["caveat"].iloc[0]
+    assert NO_PLAN_NOTE not in out["caveat"].iloc[0]
 
 
 def test_report_escapes_interpolated_text():

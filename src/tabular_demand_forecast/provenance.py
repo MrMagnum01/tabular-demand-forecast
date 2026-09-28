@@ -165,7 +165,7 @@ def verify_run_environment(require_manifest: bool) -> Dict[str, Optional[str]]:
     if set(recorded) != set(now):
         problems.append(f"evaluator file set differs from manifest: {sorted(set(recorded) ^ set(now))}")
     for f, h in now.items():
-        if recorded.get(f) not in (None, h):
+        if recorded.get(f) != h:
             problems.append(f"evaluator source {f} differs from manifest")
     lock = manifest.get("dependency_lock", {})
     if lock.get("sha256") != sha256_file(LOCK_PATH):

@@ -19,6 +19,13 @@ NA = "N/A"
 WAPE_UNIT = "%"
 
 
+class MethodFailure(RuntimeError):
+    """A method produced a non-finite (Inf/-Inf) prediction on a row its own
+    inputs declared eligible/available. This is a failed prediction, not
+    missing-input coverage, and must never be silently excluded from the
+    scored set to make coverage/metrics look better."""
+
+
 def point_metrics(pred: Sequence[float], actual: Sequence[float]) -> Dict[str, object]:
     pred = np.asarray(pred, dtype=float)
     actual = np.asarray(actual, dtype=float)
@@ -79,11 +86,25 @@ def stratum_report(
     """Own-coverage metrics per method plus a separately reported
     common-support block (rows scored by ALL methods), for one stratum.
 
-    predictions[m] is NaN wherever method m is unavailable.
+    predictions[m] is NaN wherever method m is unavailable (declared missing
+    input, e.g. no history or no plan). Any OTHER non-finite value (Inf,
+    -Inf) on an eligible row is not a missing-input signal: it means the
+    method produced an invalid prediction, and stratum_report raises
+    MethodFailure rather than quietly dropping that row out of coverage.
     """
     actual = np.asarray(actual, dtype=float)
     stratum_mask = np.asarray(stratum_mask, dtype=bool)
     eligible = stratum_mask & np.isfinite(actual)
+    for m, p in predictions.items():
+        p = np.asarray(p, dtype=float)
+        invalid = eligible & ~np.isnan(p) & ~np.isfinite(p)
+        if invalid.any():
+            raise MethodFailure(
+                f"method {m!r} produced {int(invalid.sum())} non-finite (e.g. Inf) prediction(s) on "
+                f"{int(eligible.sum())} eligible row(s); a non-finite prediction is a failed method "
+                "result, not missing-input coverage, and must not be excluded from scoring to improve "
+                "its own coverage/metrics"
+            )
     available = {m: np.isfinite(np.asarray(p, dtype=float)) for m, p in predictions.items()}
 
     own: Dict[str, object] = {}

@@ -37,6 +37,7 @@ from .evaluate import (
 from .csv_safety import write_safe_csv
 from .features import FEATURE_COLUMNS, build_partition, ObservationLookup
 from .generator import GeneratorSeeds, generate
+from .metrics import MethodFailure
 from .model_selection import run_grid_search
 from .provenance import ProvenanceError, python_version, sha256_file, verify_run_environment
 from .report import markdown_results_table, render_report
@@ -205,10 +206,13 @@ def cmd_forecast(args) -> int:
     out = Path(args.out_dir)
     env = _env(args.seeds)
     model, meta = _load_model(out, args.seeds)
+    if meta["protocol_sha256"] != env["protocol_sha256"] or meta["manifest_sha256"] != env["manifest_sha256"]:
+        raise SystemExit("model was trained under a different protocol/manifest hash; refusing to forecast")
     data = _data(args.seeds)
     weeks = args.target_week or [data.n_weeks + 1]
-    frame = future_forecast(model, data, weeks, _provenance(env, meta))
     path = Path(args.output) if args.output else out / f"future_forecast_week{'_'.join(str(w) for w in weeks)}.csv"
+    _refuse_existing([path])
+    frame = future_forecast(model, data, weeks, _provenance(env, meta))
     write_safe_csv(frame, path)
     print(f"wrote {len(frame)} forecast rows to {path}")
     print(f"CAVEAT: {FUTURE_FORECAST_CAVEAT}")
@@ -233,6 +237,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     except ProvenanceError as exc:
         print(f"PROVENANCE CHECK FAILED: {exc}", file=sys.stderr)
         return 3
+    except MethodFailure as exc:
+        print(f"METHOD FAILURE: {exc}", file=sys.stderr)
+        return 4
 
 
 if __name__ == "__main__":

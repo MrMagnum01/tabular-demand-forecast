@@ -33,10 +33,11 @@ FUTURE_FORECAST_CAVEAT = (
     "until that outcome is observed (protocol outputs_deferred_to_later_steps.real_future_forecast_caveat)."
 )
 NO_PLAN_NOTE = (
-    "No price/promo plan exists for this week, so price and promo_flag are NaN and the model routes "
-    "them via HistGradientBoostingRegressor native missing-value handling. Under the frozen protocol's "
-    "plan_missing_policy such a row would be UNAVAILABLE for any scored set; this forecast is outside "
-    "the protocol's scored contract."
+    "No price/promo plan exists for this week, so price and promo_flag are UNAVAILABLE (NaN) for that "
+    "feature row. Per protocol v2 features.price_and_promo.plan_missing_policy, a model requiring price "
+    "or promo_flag is unavailable for that row: no numeric forecast is produced (status unavailable_plan), "
+    "matching the same policy used for the locked-test scored set. Native missing-value routing is never "
+    "used to manufacture a forecast the protocol would exclude."
 )
 
 
@@ -171,13 +172,19 @@ def future_forecast(
     provenance: Mapping[str, str],
 ) -> pd.DataFrame:
     """GBM forecast for target weeks beyond the generated grid. Features come
-    from the existing observed history only; no plan is fabricated."""
+    from the existing observed history only; no plan is fabricated. Per
+    protocol v2 features.price_and_promo.plan_missing_policy, a row whose
+    price/promo plan is unavailable is UNAVAILABLE for the GBM: it gets an
+    explicit unavailable_plan row with no numeric prediction, never a
+    native-NaN-routed forecast."""
     for t in target_weeks:
         if int(t) <= data.n_weeks:
             raise ValueError(f"target week {t} is inside the frozen range 1..{data.n_weeks}; forecast is for future weeks only")
     frame = build_feature_frame(data, data.stores, [int(t) for t in target_weeks])
     g = predict_gbm(model, frame)
     plan_ok = g["available"]
+    prediction = np.where(plan_ok, g["clipped"], np.nan)
+    raw = np.where(plan_ok, g["raw"], np.nan)
     origin_iso = [utc_iso(t) for t in frame["target_week"]]
     return pd.DataFrame(
         {
@@ -185,20 +192,20 @@ def future_forecast(
             "sku": frame["sku"].to_numpy(),
             "target_week": frame["target_week"].to_numpy(dtype=np.int64),
             "method": GBM_NAME,
-            "prediction": g["clipped"],
-            "prediction_raw_preclip": g["raw"],
-            "clipped": g["raw"] < 0,
+            "prediction": prediction,
+            "prediction_raw_preclip": raw,
+            "clipped": plan_ok & (g["raw"] < 0),
             "lag1": frame["lag1"].to_numpy(dtype=float),
             "lag52": frame["lag52"].to_numpy(dtype=float),
             "roll_mean_4": frame["roll_mean_4"].to_numpy(dtype=float),
             "price": frame["price"].to_numpy(dtype=float),
             "promo_flag": frame["promo_flag"].to_numpy(dtype=float),
-            "status": np.where(plan_ok, "forecast_no_outcome_yet", "forecast_no_outcome_yet+plan_unavailable_native_nan_routing"),
+            "status": np.where(plan_ok, "forecast_no_outcome_yet", "unavailable_plan"),
             "origin_utc": origin_iso,
             "availability_cutoff_utc": origin_iso,
             "model_hash": provenance["model_hash"],
             "protocol_hash": provenance["protocol_hash"],
             "manifest_hash": provenance["manifest_hash"],
-            "caveat": np.where(plan_ok, FUTURE_FORECAST_CAVEAT, FUTURE_FORECAST_CAVEAT + " " + NO_PLAN_NOTE),
+            "caveat": np.where(plan_ok, FUTURE_FORECAST_CAVEAT, NO_PLAN_NOTE),
         }
     )
