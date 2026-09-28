@@ -141,19 +141,26 @@ def load_manifest(path: Path = MANIFEST_PATH) -> Dict[str, object]:
         return json.load(fh)
 
 
-def verify_run_environment(require_manifest: bool) -> Dict[str, Optional[str]]:
+def verify_run_environment(require_manifest: bool, manifest_path: Optional[Path] = None) -> Dict[str, Optional[str]]:
     """Returns {protocol_sha256, manifest_sha256}. Raises ProvenanceError on
     any mismatch. With require_manifest=False (dev-fixture runs only) a
-    missing manifest is tolerated and recorded as None."""
+    missing manifest is tolerated and recorded as None.
+
+    manifest_path defaults to the module-level MANIFEST_PATH (eval/manifest.json,
+    the historical step-2 record) if not given; pass eval/manifest.v2.json (or
+    another successor binding) to gate a run against corrected evaluator source
+    instead. The default is resolved at call time, not at import time, so it
+    still honours a monkeypatched MANIFEST_PATH."""
     proto = protocol_sha256()
     check_frozen_sources()
-    if not MANIFEST_PATH.exists():
+    path = Path(manifest_path) if manifest_path is not None else MANIFEST_PATH
+    if not path.exists():
         if require_manifest:
             raise ProvenanceError(
-                f"{rel(MANIFEST_PATH)} does not exist: a frozen-seed fit/score may not run before the manifest is committed"
+                f"{rel(path)} does not exist: a frozen-seed fit/score may not run before the manifest is committed"
             )
         return {"protocol_sha256": proto, "manifest_sha256": None}
-    manifest = load_manifest()
+    manifest = load_manifest(path)
     problems = []
     if manifest.get("protocol_sha256") != proto:
         problems.append("protocol sha256 differs from manifest")
@@ -174,6 +181,6 @@ def verify_run_environment(require_manifest: bool) -> Dict[str, Optional[str]]:
     if mv.split(".")[:2] != python_version().split(".")[:2]:
         problems.append(f"python {python_version()} vs manifest {mv} (major.minor must match)")
     if problems:
-        raise ProvenanceError("run environment does not match eval/manifest.json: " + "; ".join(problems))
+        raise ProvenanceError(f"run environment does not match {rel(path)}: " + "; ".join(problems))
     check_installed_against_lock(parse_lock(LOCK_PATH))
-    return {"protocol_sha256": proto, "manifest_sha256": sha256_file(MANIFEST_PATH)}
+    return {"protocol_sha256": proto, "manifest_sha256": sha256_file(path)}

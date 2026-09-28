@@ -14,13 +14,16 @@ import pytest
 from tabular_demand_forecast.evaluate import final_refit
 from tabular_demand_forecast.features import ObservationLookup, build_partition
 from tabular_demand_forecast.generator import GeneratorSeeds, generate
+from tabular_demand_forecast.metrics import MethodFailure
 from tabular_demand_forecast.model_selection import (
     ALL_FAILED_MESSAGE,
     GRID_KEYS,
     NO_ELIGIBLE_ROWS_MESSAGE,
     declared_grid,
     eligible_key_set_mask,
+    gbm_available_mask,
     make_estimator,
+    predict_gbm,
     run_grid_search,
 )
 from tabular_demand_forecast.protocol import load_protocol
@@ -126,6 +129,42 @@ def test_tie_break_is_first_in_grid_order(dev):
     log = run_grid_search(dev["train"], dev["val"], dev["obs"], grid=grid, estimator_factory=Constant)
     assert log["selected"]["index"] == 0
     assert log["selected"]["tied_indices"] == [0, 1, 2]
+
+
+class _Broken:
+    def __init__(self, value):
+        self.value = value
+
+    def predict(self, X):
+        return np.full(len(X), self.value)
+
+
+def test_predict_gbm_raises_on_nonfinite_raw_for_available_row(dev):
+    """Astra HOLD round-2 clause 3 (2026-09-28-astra-tabular-r2-review.md
+    finding 3; probes nan_model / neg_inf_after_clip): predict_gbm must
+    validate the RAW prediction's finiteness on rows the input-availability
+    mask (gbm_available_mask) marks available, BEFORE any clipping. NaN or
+    Inf/-Inf there is a failed prediction (MethodFailure), never a silent
+    'unavailable' and never a value clip_non_negative can turn into 0."""
+    frame = dev["val"]
+    available = gbm_available_mask(frame)
+    assert available.any()
+    sub = frame.loc[available].iloc[:3]
+    for bad_value in (np.nan, -np.inf, np.inf):
+        with pytest.raises(MethodFailure):
+            predict_gbm(_Broken(bad_value), sub)
+
+
+def test_predict_gbm_genuinely_unavailable_row_is_not_a_failure(dev):
+    """A row whose plan inputs are themselves unavailable must still come
+    back as unavailable (available=False), never MethodFailure, even though
+    the same broken estimator would raise if that row were available."""
+    frame = dev["val"].iloc[:3].copy()
+    frame["price"] = np.nan  # no plan for these rows -> gbm_available_mask is False
+    frame["promo_flag"] = np.nan
+    assert not gbm_available_mask(frame).any()
+    out = predict_gbm(_Broken(np.nan), frame)
+    assert not out["available"].any()
 
 
 def _model_fingerprint(model):

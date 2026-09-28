@@ -23,6 +23,7 @@ from tabular_demand_forecast.evaluate import (
 )
 from tabular_demand_forecast.features import FEATURE_COLUMNS, ObservationLookup, build_feature_frame, build_partition
 from tabular_demand_forecast.generator import GeneratedData, GeneratorSeeds, generate
+from tabular_demand_forecast.metrics import MethodFailure
 from tabular_demand_forecast.model_selection import GBM_NAME, clip_non_negative
 from tabular_demand_forecast.report import _e, render_report
 
@@ -95,6 +96,49 @@ def test_gbm_unavailable_when_plan_missing():
     frame = build_feature_frame(data, ["A"], [92, 93])
     p = method_predictions(_negative_model(), ObservationLookup(data), frame)
     assert np.isfinite(p["predictions"][GBM_NAME][0]) and np.isnan(p["predictions"][GBM_NAME][1])
+
+
+class _BrokenModel:
+    """Estimator stand-in that returns a fixed (possibly non-finite) raw
+    value for every row, regardless of input -- for exercising the
+    predict_gbm/method_predictions non-finite-raw guard directly."""
+
+    def __init__(self, value):
+        self.value = value
+
+    def predict(self, X):
+        return np.full(len(X), self.value)
+
+
+def test_method_predictions_raises_on_nonfinite_raw_for_available_input():
+    """Astra HOLD round-2 clause 3 (2026-09-28-astra-tabular-r2-review.md
+    finding 3; probes nan_model / neg_inf_after_clip): a broken estimator
+    producing NaN or -Inf raw output on rows whose plan IS available must
+    fail the method loudly (MethodFailure). Before the fix, NaN silently
+    read as 'unavailable' (coverage 0, no failure) and -Inf was clipped to a
+    plausible-looking 0.0 before the finiteness check ever saw it."""
+    data = _tiny_data()
+    frame = build_feature_frame(data, ["A"], [92, 93])  # both rows have an available plan
+    for bad_value in (np.nan, -np.inf, np.inf):
+        with pytest.raises(MethodFailure):
+            method_predictions(_BrokenModel(bad_value), ObservationLookup(data), frame)
+
+
+def test_future_forecast_raises_on_nonfinite_raw_for_available_plan():
+    """Same clause-3 guard, exercised through the future_forecast path used
+    by `cli forecast`: a non-finite raw prediction on a row with an
+    available future plan must fail loudly, not silently produce
+    unavailable_plan or a clipped 0."""
+    data = _tiny_data()
+    plan_row = pd.DataFrame([{
+        "store": "A", "sku": "SKU001", "week_index": 105,
+        "price": 10.0, "promo_flag": 0.0,
+        "available_at": pd.Timestamp(week_start_date(105)) - pd.Timedelta(days=7),
+    }])
+    import dataclasses
+    data = dataclasses.replace(data, plans=pd.concat([data.plans, plan_row], ignore_index=True))
+    with pytest.raises(MethodFailure):
+        future_forecast(_BrokenModel(-np.inf), data, [105], PROV)
 
 
 def test_baselines_equal_their_defining_features():

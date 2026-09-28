@@ -25,7 +25,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 
 from .baselines import BASELINE_NAMES, baseline_predictions
 from .features import FEATURE_COLUMNS, ObservationLookup
-from .metrics import coverage, point_metrics
+from .metrics import MethodFailure, coverage, point_metrics
 from .protocol import load_protocol
 
 GBM_NAME = "gradient_boosting"
@@ -90,12 +90,31 @@ def eligible_key_set_mask(validation_frame: pd.DataFrame) -> np.ndarray:
 
 def predict_gbm(model, frame: pd.DataFrame) -> Dict[str, np.ndarray]:
     """raw and clipped predictions for every row, plus the availability mask.
-    Callers treat rows with available == False as unavailable (NaN)."""
+    Callers treat rows with available == False as unavailable (NaN).
+
+    The raw prediction is checked for finiteness on AVAILABLE rows (per
+    gbm_available_mask, the actual input-availability signal) BEFORE any
+    clipping. A NaN/Inf/-Inf raw prediction on a row whose plan inputs are
+    present is a failed prediction, not missing-input coverage: clipping
+    would silently turn -inf into a plausible-looking 0, and passing NaN
+    through would make it indistinguishable from a genuinely unavailable
+    row. Both are refused here, loudly, before either can happen. Only rows
+    where the inputs themselves are unavailable may be reported unavailable.
+    """
     if len(frame) == 0:
         empty = np.zeros(0, dtype=float)
         return {"raw": empty, "clipped": empty, "available": np.zeros(0, dtype=bool)}
     raw = np.asarray(model.predict(feature_matrix(frame)), dtype=float)
-    return {"raw": raw, "clipped": clip_non_negative(raw), "available": gbm_available_mask(frame)}
+    available = gbm_available_mask(frame)
+    invalid = available & ~np.isfinite(raw)
+    if invalid.any():
+        raise MethodFailure(
+            f"{GBM_NAME} produced {int(invalid.sum())} non-finite raw prediction(s) on "
+            f"{int(available.sum())} row(s) with available plan inputs; this is a failed "
+            "prediction, not missing-input coverage, and must not be clipped to 0 or masked "
+            "as unavailable"
+        )
+    return {"raw": raw, "clipped": clip_non_negative(raw), "available": available}
 
 
 def fit_model(frame: pd.DataFrame, config: Mapping[str, object],

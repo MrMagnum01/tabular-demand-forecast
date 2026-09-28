@@ -77,8 +77,8 @@ def _now() -> str:
     return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
 
 
-def _env(seeds: str) -> Dict[str, Optional[str]]:
-    return verify_run_environment(require_manifest=(seeds == "frozen"))
+def _env(seeds: str, manifest: Optional[str] = None) -> Dict[str, Optional[str]]:
+    return verify_run_environment(require_manifest=(seeds == "frozen"), manifest_path=manifest)
 
 
 def _versions() -> Dict[str, str]:
@@ -113,7 +113,7 @@ def cmd_train(args) -> int:
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     _refuse_existing([out / MODEL_FILE, out / MODEL_META, out / SELECTION_LOG])
-    env = _env(args.seeds)
+    env = _env(args.seeds, getattr(args, "manifest", None))
     data = _data(args.seeds)
     obs = ObservationLookup(data)
     log = run_grid_search(build_partition(data, "train_AB"), build_partition(data, "validation_AB"), obs)
@@ -164,7 +164,7 @@ def cmd_evaluate(args) -> int:
     out = Path(args.out_dir)
     targets = [out / f for f in (METRICS_FILE, FORECASTS_FILE, REPORT_FILE, TABLE_FILE)]
     _refuse_existing(targets)
-    env = _env(args.seeds)
+    env = _env(args.seeds, getattr(args, "manifest", None))
     model, meta = _load_model(out, args.seeds)
     if meta["protocol_sha256"] != env["protocol_sha256"] or meta["manifest_sha256"] != env["manifest_sha256"]:
         raise SystemExit("model was trained under a different protocol/manifest hash; refusing to score")
@@ -204,7 +204,7 @@ def cmd_evaluate(args) -> int:
 
 def cmd_forecast(args) -> int:
     out = Path(args.out_dir)
-    env = _env(args.seeds)
+    env = _env(args.seeds, getattr(args, "manifest", None))
     model, meta = _load_model(out, args.seeds)
     if meta["protocol_sha256"] != env["protocol_sha256"] or meta["manifest_sha256"] != env["manifest_sha256"]:
         raise SystemExit("model was trained under a different protocol/manifest hash; refusing to forecast")
@@ -226,6 +226,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         p = sub.add_parser(name)
         p.add_argument("--out-dir", required=True, help="directory for model and result artifacts")
         p.add_argument("--seeds", choices=sorted(SEED_CHOICES), default="frozen")
+        p.add_argument("--manifest", default=None,
+                       help="run-manifest path to gate against (default: eval/manifest.json, the "
+                            "step-2 historical record; pass eval/manifest.v2.json for the corrected "
+                            "evaluator-source successor binding, see eval/ERRATUM-2026-09-28.md)")
         if name == "forecast":
             p.add_argument("--target-week", type=int, action="append",
                            help="future target week index > 104 (repeatable; default 105)")

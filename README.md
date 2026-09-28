@@ -2,6 +2,14 @@
 
 Synthetic portfolio demonstration, implemented with AI coding agents; independent review pending. No client data or client work.
 
+**2026-09-28 erratum:** two round-2 review findings were fixed after `results/` was produced and frozen. See
+[eval/ERRATUM-2026-09-28.md](eval/ERRATUM-2026-09-28.md). In short: (1) a non-finite raw model prediction on an
+available input could previously escape detection as "unavailable" or a clipped 0 instead of failing loudly —
+fixed, and (2) the quickstart below now runs against a new **successor** manifest,
+[eval/manifest.v2.json](eval/manifest.v2.json), which binds the corrected evaluator source; the original
+[eval/manifest.json](eval/manifest.json) is untouched and still describes exactly the code that produced
+`results/`. Nothing in `results/` was re-fit, re-scored or relabelled.
+
 Weekly demand forecasting on a fully synthetic, deterministic dataset (3 stores x 30 SKUs x 104 weeks), with a
 protocol frozen before any model existed, three fixed baselines, a pre-declared gradient-boosting grid, and a
 locked test period scored once.
@@ -25,7 +33,16 @@ interval is computed, so none of these differences is claimed to be statisticall
 `eval/manifest.json` records the protocol sha256, the four hash-bound step-1 files, the sha256 of every step-2
 source file, and the dependency-lock hash. A `--seeds frozen` run refuses to start unless all of these, plus
 the installed package versions, still match. The manifest does not embed its own hash. Its sha256 at `12bdc69` is
-`7275e08eaf7ed88067f9a8ce63a597e92f6546b0be3987bbf8e1606ec37878cf`.
+`7275e08eaf7ed88067f9a8ce63a597e92f6546b0be3987bbf8e1606ec37878cf`. It is the historical record for `results/`
+below and is never edited — including by the 2026-09-28 fixes, which changed five evaluator source files and
+therefore can no longer match it (that mismatch is the gate working correctly, not a defect: see
+[eval/ERRATUM-2026-09-28.md](eval/ERRATUM-2026-09-28.md)).
+
+Running the corrected code (this head) against the frozen dataset instead binds to the **successor manifest**
+[eval/manifest.v2.json](eval/manifest.v2.json), passed explicitly with `--manifest`. It records the same
+protocol, the same frozen generator/features/calendar hashes and the same dependency lock as `eval/manifest.json`
+— only the five corrected evaluator file hashes differ. It authorizes no new fit, selection or score against
+`results/`; `train`/`evaluate`/`forecast` below write into a fresh `runs/local`, never into `results/`.
 
 ## Quickstart (clean clone, Linux x86_64, CPython 3.13)
 
@@ -35,10 +52,15 @@ cd tabular-demand-forecast
 python3.13 -m venv .venv
 .venv/bin/python -m pip install --require-hashes --no-deps -r eval/dependency-lock.txt
 .venv/bin/python -m pytest -q
-PYTHONPATH=src .venv/bin/python -m tabular_demand_forecast.cli train    --out-dir runs/local
-PYTHONPATH=src .venv/bin/python -m tabular_demand_forecast.cli evaluate --out-dir runs/local
-PYTHONPATH=src .venv/bin/python -m tabular_demand_forecast.cli forecast --out-dir runs/local --target-week 105
+PYTHONPATH=src .venv/bin/python -m tabular_demand_forecast.cli train    --out-dir runs/local --manifest eval/manifest.v2.json
+PYTHONPATH=src .venv/bin/python -m tabular_demand_forecast.cli evaluate --out-dir runs/local --manifest eval/manifest.v2.json
+PYTHONPATH=src .venv/bin/python -m tabular_demand_forecast.cli forecast --out-dir runs/local --manifest eval/manifest.v2.json --target-week 105
 ```
+
+**Legacy reproduction** (the ORIGINAL, now-documented-as-defective code, matching `eval/manifest.json` exactly
+with no `--manifest` flag needed): `git checkout e3e7b76` — the last commit before the 2026-09-28 HOLD fixes,
+with evaluator source identical to `12bdc69`. See [eval/ERRATUM-2026-09-28.md](eval/ERRATUM-2026-09-28.md) for
+the defects that commit still has (round-2 clause 3, and the round-1 clauses fixed at `fdad847`).
 
 * `eval/dependency-lock.txt` pins all 23 installed packages, direct and transitive, each with the sha256 of its
   exact wheel. The hashes are for CPython 3.13 manylinux x86_64 wheels. On another platform, install
@@ -127,11 +149,19 @@ seasonal_naive comparison there (11.972 vs 19.250) is driven by seasonal_naive r
 
 ### Forecast for a future week
 
-`results/future_forecast_week105.csv` holds GBM forecasts for week 105 (2024-01-01), the first week with no
-generated outcome and no plan. Lags and rolling means come from the observed history. price and promo_flag are
-left as NaN, since no plan is fabricated, and the model's native missing-value routing handles them. Under the
-protocol's plan_missing_policy such rows would be unavailable in any scored set, so the file flags each row
-`plan_unavailable_native_nan_routing`. **This forecast carries no accuracy metric until the outcome is observed.**
+**`results/future_forecast_week105.csv` is superseded, nonconforming output — kept for the record, not
+current.** It was produced by the pre-fix `future_forecast`, before the 2026-09-28 round-2 fix (see
+[eval/ERRATUM-2026-09-28.md](eval/ERRATUM-2026-09-28.md)): each row carries a numeric GBM prediction and
+`status=forecast_no_outcome_yet+plan_unavailable_native_nan_routing` even though week 105 has no price/promo
+plan. Under the current (and always-intended) `plan_missing_policy`, a row with no plan is unavailable for the
+GBM — `status=unavailable_plan`, no numeric prediction, never a native-NaN-routed number. This file is retained
+byte-unchanged as evidence of the pre-fix behavior; it is not deleted, not relabelled as conforming, and should
+not be read as a current forecast.
+
+For a conforming week-105 forecast, run `forecast --manifest eval/manifest.v2.json --target-week 105` (see
+Quickstart above) into a fresh `--out-dir`; every row for week 105 will come back `unavailable_plan` with no
+numeric prediction, since no plan exists for that week in the frozen dataset. **Any forecast for a week whose
+outcome does not yet exist carries no accuracy metric until that outcome is observed.**
 
 ## Output files
 
